@@ -12,33 +12,33 @@ An autonomous AI-powered IT company where specialized agents operate as real emp
 
 ```mermaid
 graph TD
-    BOARD[👤 Human — Board of Directors]
+    BOARD["👤 Human — Board of Directors"]
     
-    CEO[🤖 CEO Agent<br/>Strategic Direction]
+    CEO["🤖 CEO Agent — Strategic Direction"]
     
-    CTO[🤖 CTO Agent<br/>Technical Vision]
-    CFO[🤖 CFO Agent<br/>Finance & Ops]
-    CMO[🤖 CMO Agent<br/>Marketing & Growth]
-    CSO[🤖 CSO Agent<br/>Sales & Revenue]
+    CTO["🤖 CTO Agent — Technical Vision"]
+    CFO["🤖 CFO Agent — Finance & Ops"]
+    CMO["🤖 CMO Agent — Marketing & Growth"]
+    CSO["🤖 CSO Agent — Sales & Revenue"]
     
-    ARCH[🤖 Lead Architect<br/>System Design]
-    EM[🤖 Engineering Manager<br/>Delivery]
-    QAL[🤖 QA Lead<br/>Quality]
-    DL[🤖 Design Lead<br/>UX/Brand]
+    ARCH["🤖 Lead Architect — System Design"]
+    EM["🤖 Engineering Manager — Delivery"]
+    QAL["🤖 QA Lead — Quality"]
+    DL["🤖 Design Lead — UX/Brand"]
     
-    ENG1[🤖 Backend Engineer]
-    ENG2[🤖 Frontend Engineer]
-    ENG3[🤖 DevOps Engineer]
-    ENG4[🤖 Data Engineer]
+    ENG1["🤖 Backend Engineer"]
+    ENG2["🤖 Frontend Engineer"]
+    ENG3["🤖 DevOps Engineer"]
+    ENG4["🤖 Data Engineer"]
     
-    QA1[🤖 QA Engineer]
-    QA2[🤖 Security Engineer]
+    QA1["🤖 QA Engineer"]
+    QA2["🤖 Security Engineer"]
     
-    MKT1[🤖 Content Creator]
-    MKT2[🤖 SEO Specialist]
+    MKT1["🤖 Content Creator"]
+    MKT2["🤖 SEO Specialist"]
     
-    SALES1[🤖 SDR Agent]
-    SALES2[🤖 Account Executive]
+    SALES1["🤖 SDR Agent"]
+    SALES2["🤖 Account Executive"]
     
     BOARD --> CEO
     CEO --> CTO
@@ -94,28 +94,28 @@ graph TD
 
 ```mermaid
 flowchart LR
-    subgraph Strategic["Strategic (CEO + C-Suite)"]
+    subgraph Strategic["Strategic — CEO + C-Suite"]
         direction TB
-        S1[New market entry]
-        S2[Major pivots]
-        S3[Budget allocation]
-        S4[Hiring/scaling]
+        S1["New market entry"]
+        S2["Major pivots"]
+        S3["Budget allocation"]
+        S4["Hiring/scaling"]
     end
     
-    subgraph Tactical["Tactical (Leads + Managers)"]
+    subgraph Tactical["Tactical — Leads + Managers"]
         direction TB
-        T1[Sprint priorities]
-        T2[Architecture decisions]
-        T3[Release scheduling]
-        T4[Tool selection]
+        T1["Sprint priorities"]
+        T2["Architecture decisions"]
+        T3["Release scheduling"]
+        T4["Tool selection"]
     end
     
-    subgraph Operational["Operational (Individual Agents)"]
+    subgraph Operational["Operational — Individual Agents"]
         direction TB
-        O1[Code implementation]
-        O2[Bug fixes]
-        O3[Content writing]
-        O4[Test execution]
+        O1["Code implementation"]
+        O2["Bug fixes"]
+        O3["Content writing"]
+        O4["Test execution"]
     end
     
     Strategic --> Tactical --> Operational
@@ -137,50 +137,50 @@ flowchart LR
 ```mermaid
 graph TB
     subgraph Human["Human Layer"]
-        HUMAN[👤 Board / Oversight]
+        HUMAN["👤 Board / Oversight"]
     end
     
     subgraph Orchestration["Orchestration Layer"]
-        ORCH[Agent Orchestrator<br/>CrewAI / Custom]
-        SCHED[Scheduler<br/>Cron / Event-driven]
-        MEM[Shared Memory<br/>Vector DB + Context Store]
+        ORCH["Agent Orchestrator — CrewAI"]
+        SCHED["Scheduler — Cron / Event-driven"]
+        MEM["Shared Memory — Vector DB"]
     end
     
     subgraph Agents["Agent Layer"]
         direction LR
-        A1[CEO]
-        A2[CTO]
-        A3[CFO]
-        A4[CMO]
-        A5[Engineers]
-        A6[QA]
-        A7[Sales]
+        A1["CEO"]
+        A2["CTO"]
+        A3["CFO"]
+        A4["CMO"]
+        A5["Engineers"]
+        A6["QA"]
+        A7["Sales"]
     end
     
     subgraph LLM["LLM Layer"]
-        LITELLM[LiteLLM Proxy]
-        LOCAL[Ollama - Local Models]
-        CLOUD[Cloud Models<br/>Gemini / Claude / GPT]
+        LITELLM["LiteLLM Proxy"]
+        LOCAL["Ollama — Local Models"]
+        CLOUD["Cloud Models — Gemini / Claude / GPT"]
     end
     
     subgraph Comms["Communication Layer"]
-        SLACK[Slack Workspace]
-        NOTIFY[Notification Router]
+        SLACK["Slack Workspace"]
+        NOTIFY["Notification Router"]
     end
     
     subgraph Tools["Tools & Integrations"]
-        GH[GitHub<br/>Code + Issues + Projects + Wiki + Pages]
-        CICD[GitHub Actions<br/>CI/CD]
-        BROWSER[Web Browser<br/>Research]
-        TERM[Terminal<br/>Code Execution]
-        EMAIL[Email<br/>Outreach]
-        ANALYTICS[Analytics<br/>Metrics & KPIs]
+        GH["GitHub — Code + Issues + Projects"]
+        CICD["GitHub Actions — CI/CD"]
+        BROWSER["Web Browser — Research"]
+        TERM["Terminal — Code Execution"]
+        EMAIL["Email — Outreach"]
+        ANALYTICS["Analytics — Metrics & KPIs"]
     end
     
     subgraph Storage["Persistence Layer"]
-        DB[(PostgreSQL<br/>State & History)]
-        VECTOR[(Vector Store<br/>Knowledge Base)]
-        FILES[File Storage<br/>Assets & Artifacts]
+        DB[("PostgreSQL — State & History")]
+        VECTOR[("Vector Store — Knowledge Base")]
+        FILES["File Storage — Assets"]
     end
     
     HUMAN <-->|"Review & Override"| ORCH
@@ -213,27 +213,27 @@ graph LR
         direction TB
         
         subgraph Public["Public Channels"]
-            GEN[#general<br/>Company-wide announcements]
-            ENG_CH[#engineering<br/>Technical discussions]
-            MKT_CH[#marketing<br/>Campaigns & content]
-            SALES_CH[#sales<br/>Pipeline & deals]
-            OPS_CH[#operations<br/>Finance & admin]
+            GEN["#general — Company-wide"]
+            ENG_CH["#engineering — Technical"]
+            MKT_CH["#marketing — Campaigns"]
+            SALES_CH["#sales — Pipeline"]
+            OPS_CH["#operations — Finance"]
         end
         
         subgraph Project["Project Channels"]
-            PROJ1[#proj-{name}<br/>Per-project work]
-            STANDUP[#standups<br/>Daily async standups]
-            RELEASES[#releases<br/>Deployment notifications]
+            PROJ1["#proj-NAME — Per-project"]
+            STANDUP["#standups — Daily async"]
+            RELEASES["#releases — Deployments"]
         end
         
         subgraph Private["Decision Channels"]
-            CSUITE[#c-suite<br/>Strategic decisions]
-            ARCH_CH[#architecture<br/>RFCs & ADRs]
-            INCIDENTS[#incidents<br/>P0/P1 responses]
+            CSUITE["#c-suite — Strategic"]
+            ARCH_CH["#architecture — RFCs"]
+            INCIDENTS["#incidents — P0/P1"]
         end
     end
     
-    BOT[Orchestrator Bot] --> Slack
+    BOT["Orchestrator Bot"] --> Slack
 ```
 
 **Communication Protocols:**
@@ -260,17 +260,17 @@ sequenceDiagram
     participant QA
     participant DEVOPS as DevOps
     
-    Note over CEO: Identifies opportunity<br/>(market scan, news, trends)
+    Note over CEO: Identifies opportunity from market scan
     
     CEO->>CTO: New initiative proposal
-    CEO->>CEO: Creates Epic (GitHub Issue)
+    CEO->>CEO: Creates Epic in GitHub Issues
     
     CTO->>ARCH: Request technical feasibility
     ARCH->>ARCH: Creates RFC in Wiki
     ARCH->>CTO: Architecture proposal
     
     CTO->>EM: Approve & assign
-    EM->>EM: Breaks into tasks (GitHub Issues)
+    EM->>EM: Breaks into tasks in GitHub Issues
     EM->>ENG: Assigns sprint work
     
     ENG->>ENG: Creates branch, implements
@@ -292,38 +292,38 @@ sequenceDiagram
 ```mermaid
 flowchart TB
     subgraph Inputs["Signal Inputs"]
-        NEWS[Tech News Feeds]
-        MARKET[Market Data]
-        GITHUB_TRENDS[GitHub Trending]
-        SOCIAL[Social Signals]
-        CUSTOMER[Customer Feedback]
-        COMPETITORS[Competitor Watch]
+        NEWS["Tech News Feeds"]
+        MARKET["Market Data"]
+        GITHUB_TRENDS["GitHub Trending"]
+        SOCIAL["Social Signals"]
+        CUSTOMER["Customer Feedback"]
+        COMPETITORS["Competitor Watch"]
     end
     
     subgraph Analysis["Analysis Layer"]
-        CEO_SCAN[CEO: Strategic Filter]
-        CTO_SCAN[CTO: Technical Filter]
-        CMO_SCAN[CMO: Market Filter]
-        CSO_SCAN[CSO: Revenue Filter]
+        CEO_SCAN["CEO: Strategic Filter"]
+        CTO_SCAN["CTO: Technical Filter"]
+        CMO_SCAN["CMO: Market Filter"]
+        CSO_SCAN["CSO: Revenue Filter"]
     end
     
     subgraph Evaluation["Evaluation"]
-        SCORE[Opportunity Scoring<br/>Impact × Feasibility × Alignment]
-        DECIDE{Score > Threshold?}
+        SCORE["Opportunity Scoring"]
+        DECIDE{"Score > Threshold?"}
     end
     
     subgraph Action["Action"]
-        EPIC[Create Epic]
-        RFC[Draft RFC]
-        PLAN[Resource Planning]
-        EXEC[Execute]
+        EPIC["Create Epic"]
+        RFC["Draft RFC"]
+        PLAN["Resource Planning"]
+        EXEC["Execute"]
     end
     
     Inputs --> Analysis
     Analysis --> SCORE
     SCORE --> DECIDE
     DECIDE -->|Yes| EPIC --> RFC --> PLAN --> EXEC
-    DECIDE -->|No| BACKLOG[Add to Backlog<br/>Re-evaluate later]
+    DECIDE -->|No| BACKLOG["Add to Backlog"]
 ```
 
 ---
@@ -350,21 +350,21 @@ flowchart TB
 
 ```mermaid
 graph TB
-    subgraph AgentRuntime["Agent Runtime (per agent)"]
-        PERSONA[Persona<br/>System Prompt + Role]
-        LOOP[Autonomy Loop<br/>Think → Plan → Act → Reflect]
-        TOOLS_INT[Tool Interface<br/>MCP Servers]
-        MEMORY_INT[Memory<br/>Short-term + Long-term]
-        COMMS_INT[Comms Interface<br/>Slack + GitHub]
+    subgraph AgentRuntime["Agent Runtime — per agent"]
+        PERSONA["Persona — System Prompt + Role"]
+        LOOP["Autonomy Loop — Think, Plan, Act, Reflect"]
+        TOOLS_INT["Tool Interface — MCP Servers"]
+        MEMORY_INT["Memory — Short-term + Long-term"]
+        COMMS_INT["Comms Interface — Slack + GitHub"]
     end
     
     subgraph Loop["Autonomy Loop Detail"]
         direction LR
-        PERCEIVE[1. Perceive<br/>Check inbox, events, mentions]
-        THINK[2. Think<br/>Analyze, reason, decide]
-        PLAN[3. Plan<br/>Break into steps]
-        ACT[4. Act<br/>Execute with tools]
-        REFLECT[5. Reflect<br/>Evaluate outcome, learn]
+        PERCEIVE["1. Perceive — Check inbox"]
+        THINK["2. Think — Analyze & decide"]
+        PLAN["3. Plan — Break into steps"]
+        ACT["4. Act — Execute with tools"]
+        REFLECT["5. Reflect — Evaluate & learn"]
     end
     
     PERSONA --> LOOP
@@ -380,27 +380,27 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph K8s["Kubernetes Cluster (k3d-mycluster)"]
+    subgraph K8s["Kubernetes Cluster — k3d-mycluster"]
         subgraph NS["Namespace: my-it-crew"]
-            ORCH_POD[Orchestrator<br/>Deployment]
-            AGENT_PODS[Agent Workers<br/>Deployment (scalable)]
-            SCHEDULER_POD[Scheduler<br/>CronJob + Event Listener]
-            SLACK_BOT[Slack Bot<br/>Deployment]
-            WEB[GitHub Pages Deployer<br/>Job]
+            ORCH_POD["Orchestrator — Deployment"]
+            AGENT_PODS["Agent Workers — Scalable Deployment"]
+            SCHEDULER_POD["Scheduler — CronJob + Events"]
+            SLACK_BOT["Slack Bot — Deployment"]
+            WEB["GitHub Pages Deployer — Job"]
         end
         
         subgraph Existing["Existing Infrastructure"]
-            LITELLM_SVC[LiteLLM<br/>ollama namespace]
-            WEAVIATE_SVC[Weaviate<br/>ollama namespace]
-            LANGFUSE_SVC[Langfuse<br/>ollama namespace]
-            NATS_SVC[NATS<br/>ssdlc namespace]
+            LITELLM_SVC["LiteLLM — ollama namespace"]
+            WEAVIATE_SVC["Weaviate — ollama namespace"]
+            LANGFUSE_SVC["Langfuse — ollama namespace"]
+            NATS_SVC["NATS — ssdlc namespace"]
         end
     end
     
     subgraph External["External Services"]
-        SLACK_API[Slack API]
-        GITHUB_API[GitHub API]
-        NEWS_API[News/RSS Feeds]
+        SLACK_API["Slack API"]
+        GITHUB_API["GitHub API"]
+        NEWS_API["News/RSS Feeds"]
     end
     
     ORCH_POD --> AGENT_PODS
@@ -476,8 +476,8 @@ my-it-crew/
 stateDiagram-v2
     [*] --> Identified: Signal detected
     Identified --> Evaluated: CEO/CTO scores
-    Evaluated --> Backlog: Score < threshold
-    Evaluated --> Planned: Score ≥ threshold
+    Evaluated --> Backlog: Score below threshold
+    Evaluated --> Planned: Score above threshold
     Planned --> InProgress: Sprint assignment
     InProgress --> InReview: PR opened
     InReview --> Testing: PR approved
@@ -486,7 +486,7 @@ stateDiagram-v2
     Done --> Deployed: CI/CD passes
     Deployed --> [*]
     
-    Backlog --> Evaluated: Re-evaluated (monthly)
+    Backlog --> Evaluated: Re-evaluated monthly
 ```
 
 **Labels:**
@@ -534,9 +534,9 @@ gantt
     axisFormat %H:%M
     
     section CEO
-    Market scan & news analysis      :06:00, 1h
-    Strategic review & planning      :09:00, 1h
-    Weekly company update (Mon)      :16:00, 1h
+    Market scan and news analysis    :06:00, 1h
+    Strategic review and planning    :09:00, 1h
+    Weekly company update on Monday  :16:00, 1h
     
     section CTO
     Tech radar scan                  :07:00, 30m
@@ -545,9 +545,9 @@ gantt
     
     section Engineering
     Check assigned tasks             :08:00, 30m
-    Development work                 :08:30, 4h
+    Development work morning         :08:30, 4h
     Code reviews                     :13:00, 1h
-    Development work                 :14:00, 3h
+    Development work afternoon       :14:00, 3h
     
     section QA
     Run regression suite             :06:00, 1h
@@ -560,7 +560,7 @@ gantt
     Social engagement                :15:00, 1h
     
     section Sales
-    Lead research & outreach         :09:00, 2h
+    Lead research and outreach       :09:00, 2h
     Follow-up sequences              :14:00, 1h
     Pipeline review                  :16:00, 30m
 ```
@@ -573,8 +573,8 @@ gantt
 | PR opened | Webhook | Architect, QA | Review, test plan |
 | CI failed | Webhook | DevOps, Author | Investigate, fix |
 | Slack mention | Bot event | Mentioned agent | Respond |
-| News alert (keyword match) | RSS/API poll | CEO | Evaluate opportunity |
-| Budget threshold crossed | Scheduled check | CFO → CEO | Alert, propose action |
+| News alert keyword match | RSS/API poll | CEO | Evaluate opportunity |
+| Budget threshold crossed | Scheduled check | CFO then CEO | Alert, propose action |
 | Deployment complete | Webhook | QA, EM | Smoke test, announce |
 | Customer inquiry | Email/form | Sales SDR | Qualify, respond |
 
@@ -621,9 +621,9 @@ gantt
 | Metric | Target | Measured By |
 |--------|--------|-------------|
 | Tasks completed per sprint | 20+ | GitHub Projects |
-| PR cycle time (open → merge) | < 4 hours | GitHub metrics |
+| PR cycle time open to merge | < 4 hours | GitHub metrics |
 | Code review turnaround | < 2 hours | GitHub metrics |
-| Opportunity identification | 5+/week | GitHub Issues (opportunity label) |
+| Opportunity identification | 5+/week | GitHub Issues with opportunity label |
 | Content published | 3+/week | GitHub Pages + social |
 | Uptime of autonomous loop | > 95% | Monitoring |
 | Cost per agent/month | < $50 | Langfuse + cloud billing |
@@ -635,10 +635,10 @@ gantt
 
 | Risk | Mitigation |
 |------|-----------|
-| Runaway costs (LLM API) | CFO agent monitors spend; hard budget caps in LiteLLM |
+| Runaway costs from LLM API | CFO agent monitors spend; hard budget caps in LiteLLM |
 | Hallucinated decisions | All strategic decisions require multi-agent consensus |
 | Infinite loops | Max iterations per autonomy cycle; circuit breakers |
-| Security (credential exposure) | Sealed secrets; minimal permissions per agent |
+| Security credential exposure | Sealed secrets; minimal permissions per agent |
 | Quality degradation | QA gates on all outputs; mandatory reviews |
 | Context window limits | Summarization; shared vector memory; focused personas |
 | Agent conflicts | Clear ownership domains; escalation protocol |
@@ -655,14 +655,14 @@ The human (Board) interacts via:
 
 ```mermaid
 flowchart LR
-    AGENTS[Agent Activity] --> DASHBOARD[Oversight Dashboard]
-    AGENTS --> SLACK_BOARD[#board Channel]
-    AGENTS --> GH_ESCALATE[GitHub: needs-human label]
+    AGENTS["Agent Activity"] --> DASHBOARD["Oversight Dashboard"]
+    AGENTS --> SLACK_BOARD["#board Channel"]
+    AGENTS --> GH_ESCALATE["GitHub: needs-human label"]
     
-    HUMAN[👤 Human] --> SLACK_BOARD
+    HUMAN["👤 Human"] --> SLACK_BOARD
     HUMAN --> DASHBOARD
     HUMAN --> GH_ESCALATE
-    HUMAN --> KILL[🛑 /pause-all]
+    HUMAN --> KILL["🛑 /pause-all"]
     
     KILL --> AGENTS
 ```
