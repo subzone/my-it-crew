@@ -1,6 +1,6 @@
 """Base agent class with autonomy loop."""
 
-import asyncio
+import json
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any
@@ -41,7 +41,7 @@ class BaseAgent(ABC):
     5. Reflect — Evaluate outcomes, update memory
     """
 
-    def __init__(self, agent_id: str, persona: str, model: str = "qwen-flash"):
+    def __init__(self, agent_id: str, persona: str, model: str = "qwen3.5-local"):
         self.agent_id = agent_id
         self.persona = persona
         self.model = model
@@ -99,7 +99,6 @@ class BaseAgent(ABC):
 
     async def _reasoning_loop(self, events: list[dict]) -> dict[str, Any]:
         """Core reasoning loop with tool use."""
-        # Build context
         messages = [
             {"role": "system", "content": self.persona},
             {
@@ -135,7 +134,6 @@ class BaseAgent(ABC):
 
             for tool_call in choice.message.tool_calls:
                 func_name = tool_call.function.name
-                import json
                 func_args = json.loads(tool_call.function.arguments)
 
                 self.log.info("tool_call", tool=func_name, args=func_args)
@@ -168,7 +166,10 @@ class BaseAgent(ABC):
         now = datetime.now(timezone.utc).isoformat()
         lines = [f"Current time: {now}\n\nNew events to process:\n"]
         for i, event in enumerate(events, 1):
-            lines.append(f"{i}. [{event.get('type', 'unknown')}] {event.get('title', '')}: {event.get('body', '')}")
+            lines.append(
+                f"{i}. [{event.get('type', 'unknown')}] {event.get('title', '')}: "
+                f"{event.get('body', '')}"
+            )
         lines.append("\nBased on your role and responsibilities, decide what actions to take.")
         return "\n".join(lines)
 

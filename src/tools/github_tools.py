@@ -66,8 +66,10 @@ class GitHubTools:
                     "number": i["number"],
                     "title": i["title"],
                     "body": i.get("body", ""),
-                    "labels": [l["name"] for l in i.get("labels", [])],
-                    "assignee": i.get("assignee", {}).get("login") if i.get("assignee") else None,
+                    "labels": [label["name"] for label in i.get("labels", [])],
+                    "assignee": (
+                        i.get("assignee", {}).get("login") if i.get("assignee") else None
+                    ),
                 }
                 for i in issues
                 if "pull_request" not in i  # Exclude PRs
@@ -110,7 +112,6 @@ class GitHubTools:
         self, title: str, body: str, category: str = "General"
     ) -> dict[str, Any]:
         """Create a GitHub Discussion using GraphQL API."""
-        # First, get the repository ID and category ID
         query = """
         query($owner: String!, $name: String!) {
             repository(owner: $owner, name: $name) {
@@ -147,10 +148,10 @@ class GitHubTools:
                     break
 
             if not category_id and categories:
-                category_id = categories[0]["id"]  # Fallback to first category
+                category_id = categories[0]["id"]
 
             if not category_id:
-                return {"error": f"No discussion categories found. Create them in repo settings."}
+                return {"error": "No discussion categories found. Create them in repo settings."}
 
             # Create discussion
             mutation = """
@@ -223,7 +224,12 @@ class GitHubTools:
             resp.raise_for_status()
             data = resp.json()
 
-            discussions = data.get("data", {}).get("repository", {}).get("discussions", {}).get("nodes", [])
+            discussions = (
+                data.get("data", {})
+                .get("repository", {})
+                .get("discussions", {})
+                .get("nodes", [])
+            )
 
             results = []
             for d in discussions:
