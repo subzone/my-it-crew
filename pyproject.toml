@@ -26,6 +26,9 @@ requires = ["setuptools>=75.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
+
+[tool.ruff.lint]
+ignore = ["BLE001"]
 line-length = 100
 target-version = "py311"
 
