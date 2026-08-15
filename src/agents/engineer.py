@@ -5,7 +5,6 @@ from typing import Any
 from src.agents.base import BaseAgent
 from src.tools.github_tools import GitHubTools
 
-
 ENGINEER_PERSONA = """You are a Senior Software Engineer at My IT Crew, an AI-powered IT company.
 
 Your responsibilities:
@@ -111,21 +110,25 @@ class EngineerAgent(BaseAgent):
         # Check for ready tasks
         issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=5)
         for issue in issues:
-            events.append({
-                "type": "task_ready",
-                "title": issue["title"],
-                "body": f"Issue #{issue['number']}: {issue.get('body', '')[:400]}",
-            })
+            events.append(
+                {
+                    "type": "task_ready",
+                    "title": issue["title"],
+                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:400]}",
+                }
+            )
 
         # Check for PRs with review comments (feedback to address)
         prs = await gh.list_pull_requests(limit=5)
         for pr in prs:
             if pr.get("review_comments", 0) > 0:
-                events.append({
-                    "type": "pr_feedback",
-                    "title": f"Review feedback on: {pr['title']}",
-                    "body": f"PR #{pr['number']} has review comments to address.",
-                })
+                events.append(
+                    {
+                        "type": "pr_feedback",
+                        "title": f"Review feedback on: {pr['title']}",
+                        "body": f"PR #{pr['number']} has review comments to address.",
+                    }
+                )
 
         return events
 

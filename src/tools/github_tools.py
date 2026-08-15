@@ -67,9 +67,7 @@ class GitHubTools:
                     "title": i["title"],
                     "body": i.get("body", ""),
                     "labels": [label["name"] for label in i.get("labels", [])],
-                    "assignee": (
-                        i.get("assignee", {}).get("login") if i.get("assignee") else None
-                    ),
+                    "assignee": (i.get("assignee", {}).get("login") if i.get("assignee") else None),
                 }
                 for i in issues
                 if "pull_request" not in i  # Exclude PRs
@@ -225,10 +223,7 @@ class GitHubTools:
             data = resp.json()
 
             discussions = (
-                data.get("data", {})
-                .get("repository", {})
-                .get("discussions", {})
-                .get("nodes", [])
+                data.get("data", {}).get("repository", {}).get("discussions", {}).get("nodes", [])
             )
 
             results = []
@@ -236,12 +231,14 @@ class GitHubTools:
                 cat_name = d.get("category", {}).get("name", "")
                 if category and cat_name.lower() != category.lower():
                     continue
-                results.append({
-                    "number": d["number"],
-                    "title": d["title"],
-                    "body": d.get("body", ""),
-                    "category": cat_name,
-                    "author": d.get("author", {}).get("login", "unknown"),
-                })
+                results.append(
+                    {
+                        "number": d["number"],
+                        "title": d["title"],
+                        "body": d.get("body", ""),
+                        "category": cat_name,
+                        "author": d.get("author", {}).get("login", "unknown"),
+                    }
+                )
 
             return results

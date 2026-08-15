@@ -5,7 +5,6 @@ from typing import Any
 from src.agents.base import BaseAgent
 from src.tools.github_tools import GitHubTools
 
-
 CTO_PERSONA = """You are the CTO of an AI-powered IT company called My IT Crew.
 
 Your responsibilities:
@@ -129,29 +128,35 @@ class CTOAgent(BaseAgent):
         # Check PRs needing review
         prs = await gh.list_pull_requests(limit=5)
         for pr in prs:
-            events.append({
-                "type": "pr_needs_review",
-                "title": pr["title"],
-                "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
-            })
+            events.append(
+                {
+                    "type": "pr_needs_review",
+                    "title": pr["title"],
+                    "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
+                }
+            )
 
         # Check issues needing CTO input
         issues = await gh.list_issues(labels=["needs-cto"], limit=5)
         for issue in issues:
-            events.append({
-                "type": "issue_needs_cto",
-                "title": issue["title"],
-                "body": issue["body"][:500],
-            })
+            events.append(
+                {
+                    "type": "issue_needs_cto",
+                    "title": issue["title"],
+                    "body": issue["body"][:500],
+                }
+            )
 
         # Check engineering discussions
         discussions = await gh.list_discussions(category="Engineering", limit=3)
         for disc in discussions:
-            events.append({
-                "type": "engineering_discussion",
-                "title": disc["title"],
-                "body": disc["body"][:300],
-            })
+            events.append(
+                {
+                    "type": "engineering_discussion",
+                    "title": disc["title"],
+                    "body": disc["body"][:300],
+                }
+            )
 
         return events
 

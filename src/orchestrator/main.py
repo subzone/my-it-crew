@@ -49,20 +49,32 @@ class Orchestrator:
 
         # CEO runs every 30 minutes
         self.scheduler.add_job(
-            self.run_agent, "interval", seconds=interval * 6,
-            args=["ceo"], id="ceo_cycle", name="CEO Cycle",
+            self.run_agent,
+            "interval",
+            seconds=interval * 6,
+            args=["ceo"],
+            id="ceo_cycle",
+            name="CEO Cycle",
         )
 
         # CTO runs every 15 minutes
         self.scheduler.add_job(
-            self.run_agent, "interval", seconds=interval * 3,
-            args=["cto"], id="cto_cycle", name="CTO Cycle",
+            self.run_agent,
+            "interval",
+            seconds=interval * 3,
+            args=["cto"],
+            id="cto_cycle",
+            name="CTO Cycle",
         )
 
         # Engineer runs every 5 minutes
         self.scheduler.add_job(
-            self.run_agent, "interval", seconds=interval,
-            args=["engineer"], id="engineer_cycle", name="Engineer Cycle",
+            self.run_agent,
+            "interval",
+            seconds=interval,
+            args=["engineer"],
+            id="engineer_cycle",
+            name="Engineer Cycle",
         )
 
     async def start(self) -> None:

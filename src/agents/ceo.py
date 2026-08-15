@@ -5,7 +5,6 @@ from typing import Any
 from src.agents.base import BaseAgent
 from src.tools.github_tools import GitHubTools
 
-
 CEO_PERSONA = """You are the CEO of an AI-powered IT company called My IT Crew.
 
 Your responsibilities:
@@ -112,28 +111,34 @@ class CEOAgent(BaseAgent):
         # Check for issues needing CEO attention
         issues = await gh.list_issues(labels=["needs-ceo"], limit=5)
         for issue in issues:
-            events.append({
-                "type": "issue_needs_attention",
-                "title": issue["title"],
-                "body": issue["body"][:500],
-            })
+            events.append(
+                {
+                    "type": "issue_needs_attention",
+                    "title": issue["title"],
+                    "body": issue["body"][:500],
+                }
+            )
 
         # Check for unresolved discussions in Strategy category
         discussions = await gh.list_discussions(category="Strategy", limit=5)
         for disc in discussions:
-            events.append({
-                "type": "strategy_discussion",
-                "title": disc["title"],
-                "body": disc["body"][:500],
-            })
+            events.append(
+                {
+                    "type": "strategy_discussion",
+                    "title": disc["title"],
+                    "body": disc["body"][:500],
+                }
+            )
 
         # If no events, trigger a proactive scan
         if not events:
-            events.append({
-                "type": "scheduled_review",
-                "title": "Periodic strategic review",
-                "body": "No pending items. Consider: reviewing open epics, identifying new opportunities, or posting a company update.",
-            })
+            events.append(
+                {
+                    "type": "scheduled_review",
+                    "title": "Periodic strategic review",
+                    "body": "No pending items. Consider: reviewing open epics, identifying new opportunities, or posting a company update.",
+                }
+            )
 
         return events
 

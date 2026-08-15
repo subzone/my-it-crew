@@ -2,7 +2,7 @@
 
 import json
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -16,13 +16,15 @@ logger = structlog.get_logger()
 
 class AgentMessage(BaseModel):
     """A message in the agent's context."""
+
     role: str
     content: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class AgentState(BaseModel):
     """Persistent state for an agent."""
+
     agent_id: str
     last_run: datetime | None = None
     run_count: int = 0
@@ -73,7 +75,7 @@ class BaseAgent(ABC):
         """Execute one full autonomy cycle."""
         self.log.info("starting_cycle", run_count=self.state.run_count)
         self.state.run_count += 1
-        self.state.last_run = datetime.now(timezone.utc)
+        self.state.last_run = datetime.now(UTC)
 
         try:
             # 1. Perceive
@@ -143,17 +145,21 @@ class BaseAgent(ABC):
                 else:
                     result = f"Unknown tool: {func_name}"
 
-                actions_taken.append({
-                    "tool": func_name,
-                    "args": func_args,
-                    "result": str(result)[:500],
-                })
+                actions_taken.append(
+                    {
+                        "tool": func_name,
+                        "args": func_args,
+                        "result": str(result)[:500],
+                    }
+                )
 
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": str(result),
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": str(result),
+                    }
+                )
 
         return {
             "status": "max_iterations",
@@ -163,7 +169,7 @@ class BaseAgent(ABC):
 
     def _format_events(self, events: list[dict]) -> str:
         """Format events into a prompt for the agent."""
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         lines = [f"Current time: {now}\n\nNew events to process:\n"]
         for i, event in enumerate(events, 1):
             lines.append(
