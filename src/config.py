@@ -15,8 +15,9 @@ class Settings(BaseSettings):
     github_repo: str = "subzone/my-it-crew"
 
     # Agent defaults
-    default_model: str = "qwen-flash"
-    reasoning_model: str = "gemini-2.5-flash"
+    default_model: str = "qwen3.5-local"  # Local, free, 9B params
+    reasoning_model: str = "nemotron-ultra"  # NVIDIA free tier, for heavy decisions
+    fast_model: str = "nemotron-nano"  # NVIDIA free tier, for quick tasks
 
     # Scheduling
     cycle_interval_seconds: int = 300  # 5 minutes
