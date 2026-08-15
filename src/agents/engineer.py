@@ -40,7 +40,7 @@ class EngineerAgent(BaseAgent):
         super().__init__(
             agent_id="engineer",
             persona=ENGINEER_PERSONA,
-            model="qwen-flash",
+            model="qwen3.5-local",  # Local free model
         )
         self._setup_tools()
 

@@ -43,7 +43,7 @@ class CTOAgent(BaseAgent):
         super().__init__(
             agent_id="cto",
             persona=CTO_PERSONA,
-            model="gemini-2.5-flash",
+            model="qwen3.5-local",  # Local free model for daily ops
         )
         self._setup_tools()
 

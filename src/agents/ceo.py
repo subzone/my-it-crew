@@ -42,7 +42,7 @@ class CEOAgent(BaseAgent):
         super().__init__(
             agent_id="ceo",
             persona=CEO_PERSONA,
-            model="gemini-2.5-flash",
+            model="qwen3.5-local",  # Local free model for daily ops
         )
         self._setup_tools()
 
