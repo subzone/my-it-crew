@@ -2,7 +2,6 @@
 
 import asyncio
 import signal
-import sys
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
