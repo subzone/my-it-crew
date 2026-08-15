@@ -16,6 +16,7 @@ spec:
       containers:
       - name: orchestrator
         image: ghcr.io/subzone/my-it-crew:latest
+        imagePullPolicy: Always
         env:
         - name: LITELLM_API_BASE
           value: "http://litellm.ollama.svc:4000/v1"
@@ -32,9 +33,11 @@ spec:
         - name: GITHUB_REPO
           value: "subzone/my-it-crew"
         - name: DEFAULT_MODEL
-          value: "qwen-flash"
+          value: "qwen3.5-local"
         - name: REASONING_MODEL
-          value: "gemini-2.5-flash"
+          value: "nemotron-ultra"
+        - name: FAST_MODEL
+          value: "nemotron-nano"
         - name: CYCLE_INTERVAL_SECONDS
           value: "300"
         resources:
