@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+  namespace: my-it-crew
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestrator
+  template:
+    metadata:
+      labels:
+        app: orchestrator
+    spec:
+      containers:
+      - name: orchestrator
+        image: ghcr.io/subzone/my-it-crew:latest
+        env:
+        - name: LITELLM_API_BASE
+          value: "http://litellm.ollama.svc:4000/v1"
+        - name: LITELLM_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: crew-secrets
+              key: litellm-api-key
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: crew-secrets
+              key: github-token
+        - name: GITHUB_REPO
+          value: "subzone/my-it-crew"
+        - name: DEFAULT_MODEL
+          value: "qwen-flash"
+        - name: REASONING_MODEL
+          value: "gemini-2.5-flash"
+        - name: CYCLE_INTERVAL_SECONDS
+          value: "300"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
