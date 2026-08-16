@@ -8,6 +8,7 @@ import structlog
 from aiohttp import web
 
 from src.agents.ceo import CEOAgent
+from src.agents.cigance import CiganceAgent
 from src.agents.cto import CTOAgent
 from src.agents.devops import DevOpsAgent
 from src.agents.eng_manager import EngManagerAgent
@@ -23,6 +24,7 @@ logger = structlog.get_logger()
 
 AGENT_REGISTRY = {
     "ceo": CEOAgent,
+    "cigance": CiganceAgent,
     "cto": CTOAgent,
     "eng-manager": EngManagerAgent,
     "engineer": EngineerAgent,

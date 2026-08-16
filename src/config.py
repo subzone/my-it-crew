@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     mattermost_url: str = "http://mattermost.my-it-crew.svc:8065"
     mattermost_token: str = ""
 
+    # Database
+    database_url: str = "postgresql://cigance:c1g4nc3-s3cr3t-2024@cigance-db:5432/cigance"
+
     # Agent defaults
     default_model: str = "nemotron-nano"
     reasoning_model: str = "nemotron-ultra"
