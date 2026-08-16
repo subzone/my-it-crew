@@ -33,7 +33,7 @@ class EngineerAgent(BaseAgent):
     """Engineer agent that reviews code and manages PRs."""
 
     def __init__(self):
-        super().__init__(agent_id="engineer", persona=ENGINEER_PERSONA)
+        super().__init__(agent_id="engineer", persona=ENGINEER_PERSONA, model="nemotron-super")
         self._setup_tools()
 
     def _setup_tools(self) -> None:
