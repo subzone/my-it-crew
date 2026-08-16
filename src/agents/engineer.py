@@ -91,6 +91,13 @@ class EngineerAgent(BaseAgent):
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
         events = []
+        # Check DMs
+        chat = ChatTools(self.settings)
+        dms = await chat.get_direct_messages(limit=3)
+        for dm in dms:
+            events.append(
+                {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
+            )
 
         # Check for PRs needing review
         prs = await gh.list_pull_requests(limit=5)

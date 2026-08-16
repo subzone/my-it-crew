@@ -116,6 +116,13 @@ class MarketerAgent(BaseAgent):
         gh = GitHubTools(self.settings)
         chat = ChatTools(self.settings)
         events = []
+        # Check DMs
+        chat = ChatTools(self.settings)
+        dms = await chat.get_direct_messages(limit=3)
+        for dm in dms:
+            events.append(
+                {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
+            )
 
         # Check Slack #marketing for requests from humans
         messages = await chat.get_channel_history(channel="marketing", limit=5)

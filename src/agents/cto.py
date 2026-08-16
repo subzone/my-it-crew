@@ -165,6 +165,13 @@ class CTOAgent(BaseAgent):
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
         events = []
+        # Check DMs
+        chat = ChatTools(self.settings)
+        dms = await chat.get_direct_messages(limit=3)
+        for dm in dms:
+            events.append(
+                {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
+            )
 
         # Priority: issues needing CTO assessment
         issues = await gh.list_issues(labels=["needs-CTO"], limit=5)
