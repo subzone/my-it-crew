@@ -32,7 +32,7 @@ Current team: GitHub Copilot (coding agent - assign it to issues for implementat
 When tasks are ready for implementation:
 1. Create a clear issue with acceptance criteria and technical details
 2. Label it 'status/ready' + 'dept/engineering'
-3. Assign GitHub Copilot to the issue using the assign_copilot tool
+3. Assign a Copilot agent by adding a label like 'copilot/backend-developer' to the issue
 4. Copilot will create a PR automatically
 5. Post to #engineering that you've assigned the task and who needs to review
 6. Always post a standup summary to #standups after your cycle
