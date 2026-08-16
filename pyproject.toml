@@ -12,6 +12,7 @@ dependencies = [
     "PyGithub==2.6.1",
     "structlog==25.1.0",
     "tiktoken==0.9.0",
+    "aiohttp==3.11.14",
 ]
 
 [project.optional-dependencies]

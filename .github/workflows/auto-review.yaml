@@ -1,0 +1,34 @@
+name: Auto PR Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+jobs:
+  request-review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+    - name: Request Copilot review
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Requesting Copilot code review for PR #${{ github.event.pull_request.number }}"
+        gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/requested_reviewers \
+          --method POST \
+          -f 'reviewers[]=Copilot' || echo "Could not assign Copilot as reviewer"
+        
+        # Also add a comment tagging the review
+        gh pr comment ${{ github.event.pull_request.number }} \
+          --repo ${{ github.repository }} \
+          --body "🔍 **Auto-review triggered.** Copilot pr-reviewer and pr-approver are checking this PR.
+
+        **Review checklist:**
+        - [ ] Code correctness
+        - [ ] Tests included
+        - [ ] Issue linked (Fixes #N)
+        - [ ] No TODOs or debug code
+        - [ ] Documentation updated
+        - [ ] CI passing"

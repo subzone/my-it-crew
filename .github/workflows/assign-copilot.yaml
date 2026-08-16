@@ -12,32 +12,27 @@ jobs:
       contents: read
       issues: write
     steps:
-    - uses: actions/checkout@v4
-
     - name: Determine agent from label
       id: agent
       run: |
         LABEL="${{ github.event.label.name }}"
-        # Extract agent name from label like "copilot/backend-developer"
         AGENT="${LABEL#copilot/}"
         echo "agent=$AGENT" >> $GITHUB_OUTPUT
         echo "Assigning Copilot agent: $AGENT to issue #${{ github.event.issue.number }}"
 
     - name: Assign Copilot to issue
-      uses: peter-evans/create-or-update-comment@v4
-      with:
-        issue-number: ${{ github.event.issue.number }}
-        body: |
-          🤖 **Copilot Agent Assigned**: `${{ steps.agent.outputs.agent }}`
-
-          Triggering automated implementation via GitHub Copilot coding agent.
-
-          @copilot please use the `${{ steps.agent.outputs.agent }}` agent profile to work on this issue.
-
-    - name: Assign Copilot user
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        gh pr comment ${{ github.event.issue.number }} \
+          --repo ${{ github.repository }} \
+          --body "🤖 **Copilot Agent Assigned**: \`${{ steps.agent.outputs.agent }}\`" 2>/dev/null || \
+        gh issue comment ${{ github.event.issue.number }} \
+          --repo ${{ github.repository }} \
+          --body "🤖 **Copilot Agent Assigned**: \`${{ steps.agent.outputs.agent }}\`
+
+        @copilot please use the \`${{ steps.agent.outputs.agent }}\` agent profile to work on this issue."
+
         gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/assignees \
           --method POST \
           -f 'assignees[]=Copilot' || true

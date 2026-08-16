@@ -14,8 +14,12 @@ class Settings(BaseSettings):
     github_token: str = ""
     github_repo: str = "subzone/my-it-crew"
 
-    # Slack
+    # Slack (legacy)
     slack_bot_token: str = ""
+
+    # Mattermost
+    mattermost_url: str = "http://mattermost.my-it-crew.svc:8065"
+    mattermost_token: str = ""
 
     # Agent defaults
     default_model: str = "nemotron-nano"

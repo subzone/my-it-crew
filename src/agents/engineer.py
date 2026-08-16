@@ -3,8 +3,8 @@
 from typing import Any
 
 from src.agents.base import BaseAgent
+from src.tools.chat_tools import ChatTools
 from src.tools.github_tools import GitHubTools
-from src.tools.slack_tools import SlackTools
 
 ENGINEER_PERSONA = """You are a Senior Software Engineer at My IT Crew.
 
@@ -33,16 +33,16 @@ class EngineerAgent(BaseAgent):
     """Engineer agent that reviews code and manages PRs."""
 
     def __init__(self):
-        super().__init__(agent_id="engineer", persona=ENGINEER_PERSONA)
+        super().__init__(agent_id="engineer", persona=ENGINEER_PERSONA, model="nemotron-super")
         self._setup_tools()
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
-        slack = SlackTools(self.settings)
+        chat = ChatTools(self.settings)
 
         self.register_tool(
             "send_slack_message",
-            slack.send_message,
+            chat.send_message,
             "Post to Slack #engineering",
             {
                 "type": "object",

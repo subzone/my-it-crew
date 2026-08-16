@@ -1,0 +1,43 @@
+name: Sync Labels to Project Board
+
+on:
+  issues:
+    types: [labeled, unlabeled]
+  pull_request:
+    types: [opened, closed, ready_for_review]
+
+jobs:
+  sync-project:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      repository-projects: write
+    steps:
+    - name: Move issue based on label
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ISSUE_NUMBER="${{ github.event.issue.number || github.event.pull_request.number }}"
+        
+        # Add status/in-review when PR is opened
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.action }}" = "opened" ]; then
+          # Find linked issues from PR body
+          BODY="${{ github.event.pull_request.body }}"
+          LINKED=$(echo "$BODY" | grep -oP '(?:Fixes|Closes|Resolves) #\K[0-9]+' || true)
+          for ISSUE in $LINKED; do
+            gh issue edit "$ISSUE" --repo ${{ github.repository }} --add-label "status/in-review" --remove-label "status/in-progress,status/ready" 2>/dev/null || true
+            echo "Moved issue #$ISSUE to In Review"
+          done
+        fi
+        
+        # Move to Done when PR is merged
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+          BODY="${{ github.event.pull_request.body }}"
+          LINKED=$(echo "$BODY" | grep -oP '(?:Fixes|Closes|Resolves) #\K[0-9]+' || true)
+          for ISSUE in $LINKED; do
+            gh issue edit "$ISSUE" --repo ${{ github.repository }} --add-label "status/done" --remove-label "status/in-review,status/in-progress" 2>/dev/null || true
+            gh issue close "$ISSUE" --repo ${{ github.repository }} --reason completed 2>/dev/null || true
+            echo "Moved issue #$ISSUE to Done and closed"
+          done
+        fi

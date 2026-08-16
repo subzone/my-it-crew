@@ -3,8 +3,8 @@
 from typing import Any
 
 from src.agents.base import BaseAgent
+from src.tools.chat_tools import ChatTools
 from src.tools.github_tools import GitHubTools
-from src.tools.slack_tools import SlackTools
 
 CTO_PERSONA = """You are the CTO of an AI-powered IT company called My IT Crew.
 
@@ -49,11 +49,11 @@ class CTOAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
-        slack = SlackTools(self.settings)
+        chat = ChatTools(self.settings)
 
         self.register_tool(
             "send_slack_message",
-            slack.send_message,
+            chat.send_message,
             "Send a message to a Slack channel",
             {
                 "type": "object",
@@ -130,7 +130,7 @@ class CTOAgent(BaseAgent):
         self.register_tool(
             "assign_copilot_agent",
             gh.update_issue_labels,
-            "Assign a Copilot agent by adding a label. Available: copilot/backend-developer, copilot/qa-engineer, copilot/pr-reviewer, copilot/pr-approver, copilot/documenter, copilot/diagram-architect",
+            "Assign a Copilot agent by adding a label. ALWAYS assign copilot/architect FIRST for design, then copilot/backend-developer for implementation. Available: copilot/architect, copilot/backend-developer, copilot/qa-engineer, copilot/pr-reviewer, copilot/pr-approver, copilot/documenter, copilot/diagram-architect",
             {
                 "type": "object",
                 "properties": {

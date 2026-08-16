@@ -1,0 +1,72 @@
+name: Post-merge Documentation
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  create-doc-tasks:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+    - name: Create documentation issue
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        PR_NUMBER="${{ github.event.pull_request.number }}"
+        PR_BODY="${{ github.event.pull_request.body }}"
+        
+        # Create documentation task
+        gh issue create \
+          --repo ${{ github.repository }} \
+          --title "📝 Document: ${PR_TITLE}" \
+          --label "copilot/documenter,dept/docs,auto-generated" \
+          --body "## Documentation Task (auto-generated)
+
+        **Merged PR**: #${PR_NUMBER} - ${PR_TITLE}
+
+        **What to document:**
+        - Update README.md if new features were added
+        - Update CHANGELOG.md under Unreleased section
+        - Create/update ADR in docs/architecture/ if architecture changed
+        - Update any affected runbooks in docs/runbooks/
+
+        **PR Description:**
+        ${PR_BODY}
+
+        ---
+        *This issue was auto-created after PR #${PR_NUMBER} was merged.*"
+
+    - name: Create diagram update issue
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        PR_NUMBER="${{ github.event.pull_request.number }}"
+        
+        # Only create diagram task for significant changes (not docs-only PRs)
+        if echo "$PR_TITLE" | grep -qiE "feat|refactor|architecture|deploy|agent"; then
+          gh issue create \
+            --repo ${{ github.repository }} \
+            --title "📊 Update diagrams: ${PR_TITLE}" \
+            --label "copilot/diagram-architect,dept/docs,auto-generated" \
+            --body "## Diagram Update Task (auto-generated)
+
+          **Merged PR**: #${PR_NUMBER} - ${PR_TITLE}
+
+          **What to update:**
+          - Review if system architecture diagram needs changes
+          - Update agent hierarchy if new agents added
+          - Update data flow diagrams if new integrations
+          - Update deployment diagram if K8s changes
+          - Create sequence diagram if new workflow introduced
+
+          All diagrams go in docs/diagrams/ using Mermaid format.
+
+          ---
+          *This issue was auto-created after PR #${PR_NUMBER} was merged.*"
+        fi
