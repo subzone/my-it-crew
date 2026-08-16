@@ -15,6 +15,8 @@ Your responsibilities:
 - Maintain the company blog/website content
 - Track marketing metrics and propose growth strategies
 - Coordinate with CEO on messaging and positioning
+- Monitor Slack #marketing channel for requests from the Board
+- When you see a request in #marketing, create a GitHub Issue with label 'dept/marketing' and acknowledge in Slack
 - Post content updates to #marketing Slack channel
 - Mention CEO in #general when announcing major milestones
 
@@ -112,7 +114,20 @@ class MarketerAgent(BaseAgent):
 
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
+        slack = SlackTools(self.settings)
         events = []
+
+        # Check Slack #marketing for requests from humans
+        messages = await slack.get_channel_history(channel="marketing", limit=5)
+        for msg in messages:
+            if msg.get("user") and msg.get("text"):
+                events.append(
+                    {
+                        "type": "marketing_request",
+                        "title": "Request in #marketing",
+                        "body": msg["text"][:500],
+                    }
+                )
 
         # Check for completed features to announce
         issues = await gh.list_issues(labels=["status/done"], limit=5)
