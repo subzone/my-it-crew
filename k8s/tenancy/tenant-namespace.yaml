@@ -1,0 +1,94 @@
+# Kubernetes manifest template for per-tenant namespace isolation.
+#
+# Replace {{TENANT_ID}} with the actual tenant slug before applying, or use
+# the Helm chart in charts/my-it-crew (see charts/my-it-crew/templates/).
+#
+# Apply with:
+#   sed 's/{{TENANT_ID}}/acme/g' k8s/tenancy/tenant-namespace.yaml | kubectl apply -f -
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-{{TENANT_ID}}
+  labels:
+    app.kubernetes.io/managed-by: my-it-crew
+    my-it-crew/tenant: "{{TENANT_ID}}"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tenant-{{TENANT_ID}}-quota
+  namespace: tenant-{{TENANT_ID}}
+spec:
+  hard:
+    requests.cpu: "500m"
+    limits.cpu: "2"
+    requests.memory: "512Mi"
+    limits.memory: "2Gi"
+    pods: "20"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tenant-{{TENANT_ID}}-limits
+  namespace: tenant-{{TENANT_ID}}
+spec:
+  limits:
+  - type: Container
+    default:
+      cpu: "200m"
+      memory: "256Mi"
+    defaultRequest:
+      cpu: "50m"
+      memory: "64Mi"
+    max:
+      cpu: "1"
+      memory: "1Gi"
+---
+# Deny all ingress/egress by default; only allow intra-namespace traffic and
+# egress to the LiteLLM gateway namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tenant-{{TENANT_ID}}-default-deny
+  namespace: tenant-{{TENANT_ID}}
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tenant-{{TENANT_ID}}-allow-intra
+  namespace: tenant-{{TENANT_ID}}
+spec:
+  podSelector: {}
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: tenant-{{TENANT_ID}}
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: tenant-{{TENANT_ID}}
+---
+# Allow egress to the shared LiteLLM / Ollama gateway in the ollama namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tenant-{{TENANT_ID}}-allow-litellm
+  namespace: tenant-{{TENANT_ID}}
+spec:
+  podSelector: {}
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ollama
+    ports:
+    - protocol: TCP
+      port: 4000

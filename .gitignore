@@ -1,1 +1,23 @@
-/src/my_it_crew.egg-info/
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
