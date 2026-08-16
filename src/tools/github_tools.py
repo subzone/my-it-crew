@@ -268,3 +268,30 @@ class GitHubTools:
 
             logger.info("copilot_assigned", issue=issue_number)
             return {"status": "copilot_assigned", "issue": issue_number}
+
+    async def update_issue_labels(
+        self, issue_number: int, add: list[str] | None = None, remove: list[str] | None = None
+    ) -> dict[str, Any]:
+        """Add or remove labels from an issue."""
+        owner, repo = self.repo.split("/")
+
+        async with httpx.AsyncClient() as client:
+            if add:
+                url = f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/labels"
+                resp = await client.post(url, json={"labels": add}, headers=self.headers)
+                resp.raise_for_status()
+
+            if remove:
+                for label in remove:
+                    url = (
+                        f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/labels/{label}"
+                    )
+                    await client.delete(url, headers=self.headers)
+
+            logger.info("labels_updated", issue=issue_number, added=add, removed=remove)
+            return {
+                "status": "labels_updated",
+                "issue": issue_number,
+                "added": add,
+                "removed": remove,
+            }

@@ -103,6 +103,29 @@ class CTOAgent(BaseAgent):
                 },
             },
         )
+
+        self.register_tool(
+            "update_issue_labels",
+            gh.update_issue_labels,
+            "Add or remove labels from an issue (use to pass work: remove needs-CTO, add needs-breakdown)",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "add": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Labels to add",
+                    },
+                    "remove": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Labels to remove",
+                    },
+                },
+                "required": ["issue_number"],
+            },
+        )
         self.register_tool(
             "list_pull_requests",
             gh.list_pull_requests,
