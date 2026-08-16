@@ -246,52 +246,22 @@ class GitHubTools:
     async def assign_copilot_to_issue(
         self, issue_number: int, custom_instructions: str | None = None
     ) -> dict[str, Any]:
-        """Assign GitHub Copilot coding agent to work on an issue. It will create a PR."""
-        owner, repo = self.repo.split("/")
-        url = f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/assignees"
+        """Assign GitHub Copilot coding agent to work on an issue."""
+        url = f"{self.base_url}/repos/{self.repo}/issues/{issue_number}/assignees"
+        payload = {"assignees": ["Copilot"]}
 
-        # First assign copilot
-        payload = {"assignees": ["copilot"]}
         async with httpx.AsyncClient() as client:
-            # Add copilot label to trigger it
-            label_url = f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/labels"
-            await client.post(label_url, json={"labels": ["copilot"]}, headers=self.headers)
-
             resp = await client.post(url, json=payload, headers=self.headers)
-            if resp.status_code == 404:
-                # Try via the Copilot API endpoint
-                copilot_url = f"{self.base_url}/repos/{owner}/{repo}/copilot/issues/{issue_number}"
-                body: dict[str, Any] = {}
-                if custom_instructions:
-                    body["custom_instructions"] = custom_instructions
-                resp = await client.post(copilot_url, json=body, headers=self.headers)
+            if resp.status_code in (404, 422):
+                # Try lowercase
+                payload = {"assignees": ["copilot"]}
+                resp = await client.post(url, json=payload, headers=self.headers)
 
-            logger.info("copilot_assigned", issue=issue_number)
-            return {"status": "copilot_assigned", "issue": issue_number}
-
-    async def update_issue_labels(
-        self, issue_number: int, add: list[str] | None = None, remove: list[str] | None = None
-    ) -> dict[str, Any]:
-        """Add or remove labels from an issue."""
-        owner, repo = self.repo.split("/")
-
-        async with httpx.AsyncClient() as client:
-            if add:
-                url = f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/labels"
-                resp = await client.post(url, json={"labels": add}, headers=self.headers)
-                resp.raise_for_status()
-
-            if remove:
-                for label in remove:
-                    url = (
-                        f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/labels/{label}"
-                    )
-                    await client.delete(url, headers=self.headers)
-
-            logger.info("labels_updated", issue=issue_number, added=add, removed=remove)
-            return {
-                "status": "labels_updated",
-                "issue": issue_number,
-                "added": add,
-                "removed": remove,
-            }
+            data = resp.json()
+            assignees = [a["login"] for a in data.get("assignees", [])]
+            if "Copilot" in assignees or "copilot" in assignees:
+                logger.info("copilot_assigned", issue=issue_number)
+                return {"status": "copilot_assigned", "issue": issue_number}
+            else:
+                logger.warning("copilot_assignment_failed", issue=issue_number, assignees=assignees)
+                return {"status": "failed", "issue": issue_number, "assignees": assignees}
