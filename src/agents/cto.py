@@ -126,6 +126,32 @@ class CTOAgent(BaseAgent):
                 "required": ["issue_number"],
             },
         )
+
+        self.register_tool(
+            "assign_copilot",
+            gh.assign_copilot_to_issue,
+            "Assign a Copilot agent to work on an issue. Use after creating breakdown tasks.",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "agent_name": {
+                        "type": "string",
+                        "description": "Which agent: backend-developer, qa-engineer, pr-reviewer, pr-approver, documenter, diagram-architect",
+                        "enum": [
+                            "backend-developer",
+                            "qa-engineer",
+                            "pr-reviewer",
+                            "pr-approver",
+                            "documenter",
+                            "diagram-architect",
+                        ],
+                    },
+                    "custom_instructions": {"type": "string", "description": "Additional context"},
+                },
+                "required": ["issue_number"],
+            },
+        )
         self.register_tool(
             "list_pull_requests",
             gh.list_pull_requests,

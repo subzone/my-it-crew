@@ -244,9 +244,15 @@ class GitHubTools:
             return results
 
     async def assign_copilot_to_issue(
-        self, issue_number: int, custom_instructions: str | None = None
+        self,
+        issue_number: int,
+        agent_name: str = "backend-developer",
+        custom_instructions: str | None = None,
     ) -> dict[str, Any]:
-        """Assign GitHub Copilot coding agent to work on an issue."""
+        """Assign GitHub Copilot coding agent to work on an issue.
+
+        Available agents: backend-developer, qa-engineer, pr-reviewer, pr-approver, documenter, diagram-architect
+        """
         url = f"{self.base_url}/repos/{self.repo}/issues/{issue_number}/assignees"
         payload = {"assignees": ["Copilot"]}
 
