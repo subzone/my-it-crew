@@ -242,3 +242,29 @@ class GitHubTools:
                 )
 
             return results
+
+    async def assign_copilot_to_issue(
+        self, issue_number: int, custom_instructions: str | None = None
+    ) -> dict[str, Any]:
+        """Assign GitHub Copilot coding agent to work on an issue. It will create a PR."""
+        owner, repo = self.repo.split("/")
+        url = f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/assignees"
+
+        # First assign copilot
+        payload = {"assignees": ["copilot"]}
+        async with httpx.AsyncClient() as client:
+            # Add copilot label to trigger it
+            label_url = f"{self.base_url}/repos/{owner}/{repo}/issues/{issue_number}/labels"
+            await client.post(label_url, json={"labels": ["copilot"]}, headers=self.headers)
+
+            resp = await client.post(url, json=payload, headers=self.headers)
+            if resp.status_code == 404:
+                # Try via the Copilot API endpoint
+                copilot_url = f"{self.base_url}/repos/{owner}/{repo}/copilot/issues/{issue_number}"
+                body: dict[str, Any] = {}
+                if custom_instructions:
+                    body["custom_instructions"] = custom_instructions
+                resp = await client.post(copilot_url, json=body, headers=self.headers)
+
+            logger.info("copilot_assigned", issue=issue_number)
+            return {"status": "copilot_assigned", "issue": issue_number}
