@@ -130,7 +130,7 @@ class CTOAgent(BaseAgent):
         self.register_tool(
             "assign_copilot_agent",
             gh.update_issue_labels,
-            "Assign a Copilot agent by adding a label. Available: copilot/backend-developer, copilot/qa-engineer, copilot/pr-reviewer, copilot/pr-approver, copilot/documenter, copilot/diagram-architect",
+            "Assign a Copilot agent by adding a label. ALWAYS assign copilot/architect FIRST for design, then copilot/backend-developer for implementation. Available: copilot/architect, copilot/backend-developer, copilot/qa-engineer, copilot/pr-reviewer, copilot/pr-approver, copilot/documenter, copilot/diagram-architect",
             {
                 "type": "object",
                 "properties": {
