@@ -8,7 +8,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from src.agents.ceo import CEOAgent
 from src.agents.cto import CTOAgent
+from src.agents.devops import DevOpsAgent
+from src.agents.eng_manager import EngManagerAgent
 from src.agents.engineer import EngineerAgent
+from src.agents.marketer import MarketerAgent
+from src.agents.qa_engineer import QAEngineerAgent
 from src.config import Settings
 
 logger = structlog.get_logger()
@@ -23,7 +27,11 @@ class Orchestrator:
         self.agents = {
             "ceo": CEOAgent(),
             "cto": CTOAgent(),
+            "eng-manager": EngManagerAgent(),
             "engineer": EngineerAgent(),
+            "devops": DevOpsAgent(),
+            "qa-engineer": QAEngineerAgent(),
+            "marketer": MarketerAgent(),
         }
         self.running = True
 
@@ -47,7 +55,7 @@ class Orchestrator:
         """Configure agent run schedules."""
         interval = self.settings.cycle_interval_seconds
 
-        # CEO runs every 30 minutes
+        # C-Suite: every 30 minutes
         self.scheduler.add_job(
             self.run_agent,
             "interval",
@@ -56,25 +64,62 @@ class Orchestrator:
             id="ceo_cycle",
             name="CEO Cycle",
         )
+        self.scheduler.add_job(
+            self.run_agent,
+            "interval",
+            seconds=interval * 6,
+            args=["cto"],
+            id="cto_cycle",
+            name="CTO Cycle",
+            misfire_grace_time=60,
+        )
 
-        # CTO runs every 15 minutes
+        # Managers: every 15 minutes
         self.scheduler.add_job(
             self.run_agent,
             "interval",
             seconds=interval * 3,
-            args=["cto"],
-            id="cto_cycle",
-            name="CTO Cycle",
+            args=["eng-manager"],
+            id="eng_manager_cycle",
+            name="Eng Manager Cycle",
         )
 
-        # Engineer runs every 5 minutes
+        # Engineers: every 10 minutes
         self.scheduler.add_job(
             self.run_agent,
             "interval",
-            seconds=interval,
+            seconds=interval * 2,
             args=["engineer"],
             id="engineer_cycle",
             name="Engineer Cycle",
+        )
+        self.scheduler.add_job(
+            self.run_agent,
+            "interval",
+            seconds=interval * 2,
+            args=["devops"],
+            id="devops_cycle",
+            name="DevOps Cycle",
+        )
+
+        # QA: every 10 minutes
+        self.scheduler.add_job(
+            self.run_agent,
+            "interval",
+            seconds=interval * 2,
+            args=["qa-engineer"],
+            id="qa_cycle",
+            name="QA Cycle",
+        )
+
+        # Marketing: every 60 minutes
+        self.scheduler.add_job(
+            self.run_agent,
+            "interval",
+            seconds=interval * 12,
+            args=["marketer"],
+            id="marketer_cycle",
+            name="Marketer Cycle",
         )
 
     async def start(self) -> None:
@@ -104,7 +149,6 @@ async def main() -> None:
     """Entry point."""
     orchestrator = Orchestrator()
 
-    # Handle shutdown signals
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, lambda: asyncio.create_task(orchestrator.stop()))
