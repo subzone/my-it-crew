@@ -1,10 +1,11 @@
-"""Single-agent worker — runs one agent in its own pod."""
+"""Single-agent worker — runs one agent in its own pod with HTTP trigger support."""
 
 import asyncio
 import os
 import signal
 
 import structlog
+from aiohttp import web
 
 from src.agents.ceo import CEOAgent
 from src.agents.cto import CTOAgent
@@ -29,7 +30,7 @@ AGENT_REGISTRY = {
 
 
 async def run_worker() -> None:
-    """Run a single agent in a loop."""
+    """Run a single agent in a loop with HTTP trigger support."""
     agent_id = os.environ.get("AGENT_ID")
     if not agent_id:
         logger.error("AGENT_ID env var not set")
@@ -43,18 +44,63 @@ async def run_worker() -> None:
     interval = settings.cycle_interval_seconds
     agent = AGENT_REGISTRY[agent_id]()
     running = True
+    trigger_event = asyncio.Event()
 
     def stop() -> None:
         nonlocal running
         running = False
+        trigger_event.set()
 
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, stop)
 
-    logger.info("worker_starting", agent_id=agent_id, interval=interval)
+    # HTTP trigger endpoint
+    async def handle_trigger(request: web.Request) -> web.Response:
+        """Trigger an immediate agent cycle via HTTP."""
+        logger.info("trigger_received", agent_id=agent_id)
+        trigger_event.set()
+        return web.json_response({"status": "triggered", "agent": agent_id})
+
+    async def handle_health(request: web.Request) -> web.Response:
+        """Health check."""
+        return web.json_response({"status": "ok", "agent": agent_id})
+
+    # Start HTTP server
+    app = web.Application()
+    app.router.add_post("/trigger", handle_trigger)
+    app.router.add_get("/health", handle_health)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8080)
+    await site.start()
+
+    logger.info("worker_starting", agent_id=agent_id, interval=interval, http_port=8080)
+
+    # Run initial cycle
+    try:
+        result = await agent.run_cycle()
+        logger.info(
+            "cycle_done",
+            agent_id=agent_id,
+            status=result.get("status"),
+            actions=len(result.get("actions", [])),
+        )
+    except Exception as e:
+        logger.error("cycle_error", agent_id=agent_id, error=str(e))
 
     while running:
+        # Wait for either timer or trigger
+        trigger_event.clear()
+        try:
+            await asyncio.wait_for(trigger_event.wait(), timeout=interval)
+            logger.info("triggered_early", agent_id=agent_id)
+        except TimeoutError:
+            pass  # Normal timer expiry
+
+        if not running:
+            break
+
         try:
             result = await agent.run_cycle()
             logger.info(
@@ -66,12 +112,7 @@ async def run_worker() -> None:
         except Exception as e:
             logger.error("cycle_error", agent_id=agent_id, error=str(e))
 
-        # Wait for next cycle
-        for _ in range(interval):
-            if not running:
-                break
-            await asyncio.sleep(1)
-
+    await runner.cleanup()
     logger.info("worker_stopped", agent_id=agent_id)
 
 
