@@ -193,20 +193,33 @@ class BaseAgent(ABC):
             await self.unload_skill(skill.name)
 
         tools = skill.get_tools()
-        tool_names = []
-        for tool in tools:
-            self.register_tool(
-                tool["name"],
-                tool["func"],
-                tool["description"],
-                tool["parameters"],
-            )
-            tool_names.append(tool["name"])
-        self._skill_tool_names[skill.name] = tool_names
-        self.skills[skill.name] = skill
-        await skill.on_load(self)
-        self.log.info("skill_loaded", skill=skill.name)
+        tool_names: list[str] = []
+        try:
+            for tool in tools:
+                tool_name = tool["name"]
+                if tool_name in self.tools:
+                    raise ValueError(
+                        f"Cannot load skill '{skill.name}': tool '{tool_name}' is already registered"
+                    )
+                self.register_tool(
+                    tool_name,
+                    tool["func"],
+                    tool["description"],
+                    tool["parameters"],
+                )
+                tool_names.append(tool_name)
 
+            self._skill_tool_names[skill.name] = tool_names
+            self.skills[skill.name] = skill
+            await skill.on_load(self)
+        except Exception:
+            for tool_name in tool_names:
+                self.tools.pop(tool_name, None)
+            self._skill_tool_names.pop(skill.name, None)
+            self.skills.pop(skill.name, None)
+            raise
+
+        self.log.info("skill_loaded", skill=skill.name)
     async def unload_skill(self, skill_name: str) -> None:
         """Remove a previously loaded skill and its tools from this agent."""
         skill = self.skills.pop(skill_name, None)
