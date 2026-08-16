@@ -4,6 +4,7 @@ from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.github_tools import GitHubTools
+from src.tools.slack_tools import SlackTools
 
 DEVOPS_PERSONA = """You are a DevOps Engineer at My IT Crew.
 
@@ -14,6 +15,9 @@ Your responsibilities:
 - Respond to incidents and outages
 - Automate operational tasks
 - Review infrastructure-related PRs
+- Post deployment status to #releases Slack channel
+- Post incidents to #engineering
+- Mention CTO when infrastructure decisions are needed
 
 Your workflow:
 1. Check for CI/CD failures or deployment issues
@@ -35,6 +39,21 @@ class DevOpsAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
+        slack = SlackTools(self.settings)
+
+        self.register_tool(
+            "send_slack_message",
+            slack.send_message,
+            "Post to Slack (#releases for deployments, #engineering for issues)",
+            {
+                "type": "object",
+                "properties": {
+                    "channel": {"type": "string"},
+                    "text": {"type": "string"},
+                },
+                "required": ["channel", "text"],
+            },
+        )
         self.register_tool(
             "create_issue",
             gh.create_issue,

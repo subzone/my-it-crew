@@ -4,6 +4,7 @@ from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.github_tools import GitHubTools
+from src.tools.slack_tools import SlackTools
 
 QA_PERSONA = """You are a QA Engineer at My IT Crew.
 
@@ -14,6 +15,9 @@ Your responsibilities:
 - Write test plans for new features
 - Run regression checks after deployments
 - Label issues as 'status/qa-passed' or create bugs
+- Post QA results to #engineering Slack channel
+- Mention the Engineer when a PR needs fixes
+- Mention the Eng Manager when QA is complete
 
 Your workflow:
 1. Check for PRs needing QA review
@@ -33,6 +37,21 @@ class QAEngineerAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
+        slack = SlackTools(self.settings)
+
+        self.register_tool(
+            "send_slack_message",
+            slack.send_message,
+            "Post to Slack (use #engineering for updates)",
+            {
+                "type": "object",
+                "properties": {
+                    "channel": {"type": "string"},
+                    "text": {"type": "string"},
+                },
+                "required": ["channel", "text"],
+            },
+        )
         self.register_tool(
             "create_issue",
             gh.create_issue,

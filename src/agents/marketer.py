@@ -4,6 +4,7 @@ from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.github_tools import GitHubTools
+from src.tools.slack_tools import SlackTools
 
 MARKETER_PERSONA = """You are the Marketing Lead at My IT Crew.
 
@@ -14,6 +15,8 @@ Your responsibilities:
 - Maintain the company blog/website content
 - Track marketing metrics and propose growth strategies
 - Coordinate with CEO on messaging and positioning
+- Post content updates to #marketing Slack channel
+- Mention CEO in #general when announcing major milestones
 
 Your workflow:
 1. Check for completed features or milestones to announce
@@ -38,6 +41,21 @@ class MarketerAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
+        slack = SlackTools(self.settings)
+
+        self.register_tool(
+            "send_slack_message",
+            slack.send_message,
+            "Post to Slack (#marketing for content, #general for announcements)",
+            {
+                "type": "object",
+                "properties": {
+                    "channel": {"type": "string"},
+                    "text": {"type": "string"},
+                },
+                "required": ["channel", "text"],
+            },
+        )
         self.register_tool(
             "create_issue",
             gh.create_issue,
