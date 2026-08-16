@@ -44,7 +44,9 @@ class EngManagerAgent(BaseAgent):
     """Engineering Manager that breaks down work and tracks delivery."""
 
     def __init__(self):
-        super().__init__(agent_id="eng-manager", persona=ENG_MANAGER_PERSONA, model="nemotron-super")
+        super().__init__(
+            agent_id="eng-manager", persona=ENG_MANAGER_PERSONA, model="nemotron-super"
+        )
         self._setup_tools()
 
     def _setup_tools(self) -> None:
