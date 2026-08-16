@@ -43,6 +43,7 @@ async def run_worker() -> None:
     settings = Settings()
     interval = settings.cycle_interval_seconds
     agent = AGENT_REGISTRY[agent_id]()
+    agent.start()
     running = True
     trigger_event = asyncio.Event()
 
