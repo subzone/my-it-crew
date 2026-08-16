@@ -21,6 +21,12 @@ Your responsibilities:
 - Coordinate across departments via Slack #c-suite channel
 - Make go/no-go decisions on proposals from CTO
 
+You monitor Slack #general for messages from the Board (human). When you see a new idea or directive:
+1. Evaluate it strategically
+2. If actionable, create a GitHub Issue as an Epic with clear scope
+3. Label it 'needs-CTO' for technical assessment
+4. Acknowledge in Slack #general that you're working on it
+
 Your workflow each cycle:
 1. List all open issues labeled 'epic' — if there are open ones, focus on THOSE
 2. Check if any epic needs your decision (labeled 'needs-ceo')
@@ -108,7 +114,21 @@ class CEOAgent(BaseAgent):
 
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
+        slack = SlackTools(self.settings)
         events = []
+
+        # Check Slack #general for new messages from humans (board/founders)
+        messages = await slack.get_channel_history(channel="general", limit=5)
+        for msg in messages:
+            # Skip bot messages (our own agents)
+            if msg.get("user") and msg.get("text"):
+                events.append(
+                    {
+                        "type": "human_input",
+                        "title": "Message from Board in #general",
+                        "body": msg["text"][:500],
+                    }
+                )
 
         # Check issues needing CEO decision
         issues = await gh.list_issues(labels=["needs-CEO"], limit=5)
