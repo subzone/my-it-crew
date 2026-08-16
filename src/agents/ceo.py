@@ -49,7 +49,7 @@ class CEOAgent(BaseAgent):
     """CEO agent with strategic planning capabilities."""
 
     def __init__(self):
-        super().__init__(agent_id="ceo", persona=CEO_PERSONA, model="nemotron-super")
+        super().__init__(agent_id="ceo", persona=CEO_PERSONA)
         self._setup_tools()
 
     def _setup_tools(self) -> None:

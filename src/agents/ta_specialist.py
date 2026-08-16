@@ -40,7 +40,7 @@ class TASpecialistAgent(BaseAgent):
     """Talent Acquisition Specialist."""
 
     def __init__(self):
-        super().__init__(agent_id="ta-specialist", persona=TA_PERSONA, model="nemotron-super")
+        super().__init__(agent_id="ta-specialist", persona=TA_PERSONA)
         self._setup_tools()
 
     def _setup_tools(self) -> None:

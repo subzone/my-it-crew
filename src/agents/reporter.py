@@ -34,7 +34,7 @@ class ReporterAgent(BaseAgent):
     """Interview Reporter that generates assessment reports."""
 
     def __init__(self):
-        super().__init__(agent_id="reporter", persona=REPORTER_PERSONA, model="nemotron-super")
+        super().__init__(agent_id="reporter", persona=REPORTER_PERSONA)
         self._setup_tools()
 
     def _setup_tools(self) -> None:
