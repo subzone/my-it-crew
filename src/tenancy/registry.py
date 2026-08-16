@@ -91,7 +91,16 @@ class TenantRegistry:
         cfg = self.get(tenant_id)
         if cfg is None:
             return default
-        return cfg.config_overrides.get(key, default)
+        if key in cfg.config_overrides:
+            logger.debug(
+                "tenant_setting_override",
+                tenant_id=tenant_id,
+                key=key,
+                value=cfg.config_overrides[key],
+            )
+            return cfg.config_overrides[key]
+        logger.debug("tenant_setting_default", tenant_id=tenant_id, key=key, default=default)
+        return default
 
     # ------------------------------------------------------------------
     # Persistence helpers
