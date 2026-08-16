@@ -270,11 +270,11 @@ class ScraperTools:
         except Exception as e:
             return {"status": "error", "error": str(e)[:200]}
 
-    def get_known_providers(self) -> list[dict[str, Any]]:
+    async def get_known_providers(self) -> list[dict[str, Any]]:
         """Return list of known free AI API providers."""
         return KNOWN_FREE_PROVIDERS
 
-    def get_known_security_models(self) -> list[dict[str, Any]]:
+    async def get_known_security_models(self) -> list[dict[str, Any]]:
         """Return list of known free security/safety models."""
         return KNOWN_SECURITY_MODELS
 
