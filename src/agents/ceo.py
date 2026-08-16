@@ -41,7 +41,7 @@ class CEOAgent(BaseAgent):
         super().__init__(
             agent_id="ceo",
             persona=CEO_PERSONA,
-            model="qwen3.5-local",  # Local free model for daily ops
+            model=None,  # Set from settings
         )
         self._setup_tools()
 

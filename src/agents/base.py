@@ -46,8 +46,8 @@ class BaseAgent(ABC):
     def __init__(self, agent_id: str, persona: str, model: str = "qwen3.5-local"):
         self.agent_id = agent_id
         self.persona = persona
-        self.model = model
         self.settings = Settings()
+        self.model = model or self.settings.default_model
         self.state = AgentState(agent_id=agent_id)
         self.client = AsyncOpenAI(
             base_url=self.settings.litellm_api_base,

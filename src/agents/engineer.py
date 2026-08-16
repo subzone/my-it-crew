@@ -39,7 +39,7 @@ class EngineerAgent(BaseAgent):
         super().__init__(
             agent_id="engineer",
             persona=ENGINEER_PERSONA,
-            model="qwen3.5-local",  # Local free model
+            model=None,  # Set from settings
         )
         self._setup_tools()
 
