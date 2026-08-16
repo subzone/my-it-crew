@@ -220,6 +220,7 @@ class BaseAgent(ABC):
             raise
 
         self.log.info("skill_loaded", skill=skill.name)
+
     async def unload_skill(self, skill_name: str) -> None:
         """Remove a previously loaded skill and its tools from this agent."""
         skill = self.skills.pop(skill_name, None)
