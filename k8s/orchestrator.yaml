@@ -39,6 +39,11 @@ spec:
         - name: FAST_MODEL
           value: "nemotron-nano"
         - name: CYCLE_INTERVAL_SECONDS
+        - name: SLACK_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: crew-secrets
+              key: slack-bot-token
           value: "300"
         resources:
           requests:

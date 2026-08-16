@@ -14,10 +14,13 @@ class Settings(BaseSettings):
     github_token: str = ""
     github_repo: str = "subzone/my-it-crew"
 
+    # Slack
+    slack_bot_token: str = ""
+
     # Agent defaults
-    default_model: str = "qwen3.5-local"  # Local, free, 9B params
-    reasoning_model: str = "nemotron-ultra"  # NVIDIA free tier, for heavy decisions
-    fast_model: str = "nemotron-nano"  # NVIDIA free tier, for quick tasks
+    default_model: str = "nemotron-nano"
+    reasoning_model: str = "nemotron-ultra"
+    fast_model: str = "nemotron-nano"
 
     # Scheduling
     cycle_interval_seconds: int = 300  # 5 minutes

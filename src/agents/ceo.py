@@ -4,6 +4,7 @@ from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.github_tools import GitHubTools
+from src.tools.slack_tools import SlackTools
 
 CEO_PERSONA = """You are the CEO of an AI-powered IT company called My IT Crew.
 
@@ -20,7 +21,10 @@ Your communication style:
 - Focus on outcomes and business impact
 - Delegate execution details to appropriate leads
 
-You communicate via GitHub Discussions (category: Announcements for company-wide, Strategy for C-suite).
+You communicate via:
+- Slack: #general for company-wide updates, #c-suite for strategic discussions
+- GitHub Issues for tracking work (epics, features)
+- GitHub Discussions for long-form strategy docs
 You track work via GitHub Issues with the 'epic' label.
 
 When you identify an opportunity:
@@ -83,6 +87,22 @@ class CEOAgent(BaseAgent):
                     },
                 },
                 "required": ["title", "body", "category"],
+            },
+        )
+
+        slack = SlackTools(self.settings)
+
+        self.register_tool(
+            "send_slack_message",
+            slack.send_message,
+            "Send a message to a Slack channel (use channel name like #general or #c-suite)",
+            {
+                "type": "object",
+                "properties": {
+                    "channel": {"type": "string", "description": "Channel name (e.g. #general)"},
+                    "text": {"type": "string", "description": "Message text (supports markdown)"},
+                },
+                "required": ["channel", "text"],
             },
         )
 
