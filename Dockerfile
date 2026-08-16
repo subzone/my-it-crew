@@ -10,4 +10,6 @@ RUN pip install --no-cache-dir -e .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "-m", "src.orchestrator.main"]
+# Default: run single agent worker (set AGENT_ID env var)
+# For legacy orchestrator mode: override CMD
+CMD ["python", "-m", "src.orchestrator.worker"]
