@@ -18,6 +18,9 @@ src/my_it_crew.egg-info/requires.txt
 src/my_it_crew.egg-info/top_level.txt
 src/orchestrator/__init__.py
 src/orchestrator/main.py
+src/orchestrator/worker.py
 src/tools/__init__.py
 src/tools/github_tools.py
 src/tools/slack_tools.py
+tests/test_agents.py
+tests/test_base_agent.py

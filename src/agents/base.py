@@ -1,5 +1,6 @@
 """Base agent class with autonomy loop."""
 
+import enum
 import json
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
@@ -12,6 +13,14 @@ from pydantic import BaseModel, Field
 from src.config import Settings
 
 logger = structlog.get_logger()
+
+
+class AgentStatus(str, enum.Enum):
+    """Lifecycle status of an agent."""
+
+    STOPPED = "stopped"
+    RUNNING = "running"
+    PAUSED = "paused"
 
 
 class AgentMessage(BaseModel):
@@ -32,6 +41,33 @@ class AgentState(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class SkillPlugin(ABC):
+    """Base class for skill plugins.
+
+    Skills extend an agent's capabilities with domain-specific behaviours.
+    Each skill declares the tools it provides; the agent registers them
+    during :meth:`BaseAgent.load_skill`.
+    """
+
+    #: Unique identifier for this skill (e.g. ``"it_ticket_triage"``).
+    name: str
+
+    @abstractmethod
+    def get_tools(self) -> list[dict[str, Any]]:
+        """Return a list of tool descriptors.
+
+        Each descriptor is a dict with keys:
+        ``name``, ``func``, ``description``, ``parameters``.
+        """
+        ...
+
+    async def on_load(self, agent: "BaseAgent") -> None:
+        """Called after the skill has been loaded into *agent*.  Override as needed."""
+
+    async def on_unload(self, agent: "BaseAgent") -> None:
+        """Called before the skill is removed from *agent*.  Override as needed."""
+
+
 class BaseAgent(ABC):
     """Base class for all autonomous agents.
 
@@ -41,6 +77,18 @@ class BaseAgent(ABC):
     3. Plan — Decide on actions to take
     4. Act — Execute actions using tools
     5. Reflect — Evaluate outcomes, update memory
+
+    Lifecycle
+    ---------
+    Call :meth:`start` before running cycles and :meth:`stop` when done.
+    Use :meth:`pause` / :meth:`resume` to temporarily suspend cycle
+    execution without tearing down the agent.
+
+    Plugin architecture
+    -------------------
+    Register domain-specific :class:`SkillPlugin` instances with
+    :meth:`load_skill`.  Their tools are automatically registered and
+    available to the reasoning loop.
     """
 
     def __init__(self, agent_id: str, persona: str, model: str = "qwen3.5-local"):
@@ -54,8 +102,124 @@ class BaseAgent(ABC):
             api_key=self.settings.litellm_api_key,
         )
         self.tools: dict[str, Any] = {}
+        self.skills: dict[str, SkillPlugin] = {}
+        self._skill_tool_names: dict[str, list[str]] = {}
         self.max_iterations = 5
         self.log = logger.bind(agent=agent_id)
+        self._status: AgentStatus = AgentStatus.STOPPED
+        self._started_at: datetime | None = None
+
+    # ------------------------------------------------------------------
+    # Lifecycle management
+    # ------------------------------------------------------------------
+
+    @property
+    def status(self) -> AgentStatus:
+        """Current lifecycle status."""
+        return self._status
+
+    def start(self) -> None:
+        """Transition the agent to the RUNNING state.
+
+        Safe to call from STOPPED or PAUSED.
+        """
+        if self._status == AgentStatus.RUNNING:
+            return
+        self._status = AgentStatus.RUNNING
+        if self._started_at is None:
+            self._started_at = datetime.now(UTC)
+        self.log.info("agent_started")
+
+    def stop(self) -> None:
+        """Transition the agent to the STOPPED state."""
+        self._status = AgentStatus.STOPPED
+        self.log.info("agent_stopped")
+
+    def pause(self) -> None:
+        """Pause the agent without stopping it.
+
+        A paused agent will skip :meth:`run_cycle` execution and return an
+        ``{"status": "paused"}`` result immediately.
+        """
+        if self._status != AgentStatus.RUNNING:
+            raise RuntimeError(
+                f"Cannot pause agent '{self.agent_id}': not in RUNNING state (current: {self._status})"
+            )
+        self._status = AgentStatus.PAUSED
+        self.log.info("agent_paused")
+
+    def resume(self) -> None:
+        """Resume a paused agent, transitioning back to RUNNING state."""
+        if self._status != AgentStatus.PAUSED:
+            raise RuntimeError(
+                f"Cannot resume agent '{self.agent_id}': not in PAUSED state (current: {self._status})"
+            )
+        self._status = AgentStatus.RUNNING
+        self.log.info("agent_resumed")
+
+    # ------------------------------------------------------------------
+    # Health check
+    # ------------------------------------------------------------------
+
+    def health(self) -> dict[str, Any]:
+        """Return a health-check snapshot for this agent.
+
+        The dict is safe to serialise as JSON and suitable for use in a
+        ``/healthz`` HTTP endpoint or a monitoring probe.
+        """
+        return {
+            "agent_id": self.agent_id,
+            "status": self._status.value,
+            "run_count": self.state.run_count,
+            "last_run": self.state.last_run.isoformat() if self.state.last_run else None,
+            "started_at": self._started_at.isoformat() if self._started_at else None,
+            "tools": list(self.tools.keys()),
+            "skills": list(self.skills.keys()),
+        }
+
+    # ------------------------------------------------------------------
+    # Skill plugin architecture
+    # ------------------------------------------------------------------
+
+    async def load_skill(self, skill: SkillPlugin) -> None:
+        """Register a skill plugin and its tools into this agent.
+
+        If a skill with the same name is already loaded it is first
+        unloaded before the new one is registered.  Tool names provided by
+        this skill are recorded so that :meth:`unload_skill` can remove them
+        precisely without re-invoking ``get_tools()``.
+        """
+        if skill.name in self.skills:
+            await self.unload_skill(skill.name)
+
+        tools = skill.get_tools()
+        tool_names = []
+        for tool in tools:
+            self.register_tool(
+                tool["name"],
+                tool["func"],
+                tool["description"],
+                tool["parameters"],
+            )
+            tool_names.append(tool["name"])
+        self._skill_tool_names[skill.name] = tool_names
+        self.skills[skill.name] = skill
+        await skill.on_load(self)
+        self.log.info("skill_loaded", skill=skill.name)
+
+    async def unload_skill(self, skill_name: str) -> None:
+        """Remove a previously loaded skill and its tools from this agent."""
+        skill = self.skills.pop(skill_name, None)
+        if skill is None:
+            return
+        for tool_name in self._skill_tool_names.pop(skill_name, []):
+            self.tools.pop(tool_name, None)
+        await skill.on_unload(self)
+        self.log.info("skill_unloaded", skill=skill_name)
+
+    # ------------------------------------------------------------------
+    # Tool registry
+    # ------------------------------------------------------------------
 
     def register_tool(self, name: str, func: Any, description: str, parameters: dict) -> None:
         """Register a tool the agent can use."""
@@ -72,7 +236,18 @@ class BaseAgent(ABC):
         }
 
     async def run_cycle(self) -> dict[str, Any]:
-        """Execute one full autonomy cycle."""
+        """Execute one full autonomy cycle.
+
+        Returns immediately with ``{"status": "paused"}`` when the agent is
+        paused, or ``{"status": "stopped"}`` when it is stopped.
+        """
+        if self._status == AgentStatus.PAUSED:
+            self.log.info("cycle_skipped_paused")
+            return {"status": "paused"}
+        if self._status == AgentStatus.STOPPED:
+            self.log.info("cycle_skipped_stopped")
+            return {"status": "stopped"}
+
         self.log.info("starting_cycle", run_count=self.state.run_count)
         self.state.run_count += 1
         self.state.last_run = datetime.now(UTC)
