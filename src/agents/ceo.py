@@ -117,6 +117,17 @@ class CEOAgent(BaseAgent):
         chat = ChatTools(self.settings)
         events = []
 
+        # Check DMs sent directly to CEO
+        dms = await chat.get_direct_messages(limit=3)
+        for dm in dms:
+            events.append(
+                {
+                    "type": "direct_message",
+                    "title": "Direct message to CEO",
+                    "body": dm["text"][:500],
+                }
+            )
+
         # Check Slack #general for new messages from humans (board/founders)
         messages = await chat.get_channel_history(channel="general", limit=5)
         for msg in messages:
