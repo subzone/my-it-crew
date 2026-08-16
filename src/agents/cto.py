@@ -118,7 +118,7 @@ class CTOAgent(BaseAgent):
         events = []
 
         # Priority: issues needing CTO assessment
-        issues = await gh.list_issues(labels=["needs-cto"], limit=5)
+        issues = await gh.list_issues(labels=["needs-CTO"], limit=5)
         for issue in issues:
             events.append(
                 {

@@ -111,7 +111,7 @@ class CEOAgent(BaseAgent):
         events = []
 
         # Check issues needing CEO decision
-        issues = await gh.list_issues(labels=["needs-ceo"], limit=5)
+        issues = await gh.list_issues(labels=["needs-CEO"], limit=5)
         for issue in issues:
             events.append(
                 {
