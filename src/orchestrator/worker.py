@@ -14,6 +14,9 @@ from src.agents.eng_manager import EngManagerAgent
 from src.agents.engineer import EngineerAgent
 from src.agents.marketer import MarketerAgent
 from src.agents.qa_engineer import QAEngineerAgent
+from src.agents.reporter import ReporterAgent
+from src.agents.ta_specialist import TASpecialistAgent
+from src.agents.tech_interviewer import TechInterviewerAgent
 from src.config import Settings
 
 logger = structlog.get_logger()
@@ -26,6 +29,9 @@ AGENT_REGISTRY = {
     "devops": DevOpsAgent,
     "qa-engineer": QAEngineerAgent,
     "marketer": MarketerAgent,
+    "ta-specialist": TASpecialistAgent,
+    "tech-interviewer": TechInterviewerAgent,
+    "reporter": ReporterAgent,
 }
 
 
