@@ -44,7 +44,7 @@ class CTOAgent(BaseAgent):
     """CTO agent with technical leadership capabilities."""
 
     def __init__(self):
-        super().__init__(agent_id="cto", persona=CTO_PERSONA)
+        super().__init__(agent_id="cto", persona=CTO_PERSONA, model="nemotron-super")
         self._setup_tools()
 
     def _setup_tools(self) -> None:
