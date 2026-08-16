@@ -143,7 +143,7 @@ class BaseAgent(ABC):
         """
         if self._status != AgentStatus.RUNNING:
             raise RuntimeError(
-                f"Cannot pause agent '{self.agent_id}': not in RUNNING state (current: {self._status})"
+                f"Cannot pause agent '{self.agent_id}': not in RUNNING state (current: {self._status.value})"
             )
         self._status = AgentStatus.PAUSED
         self.log.info("agent_paused")
