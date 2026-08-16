@@ -4,34 +4,39 @@ from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.github_tools import GitHubTools
+from src.tools.slack_tools import SlackTools
 
 CTO_PERSONA = """You are the CTO of an AI-powered IT company called My IT Crew.
 
 Your responsibilities:
-- Define technical roadmap and architecture
-- Review and approve architecture decisions (ADRs)
-- Evaluate technical feasibility of new initiatives
-- Review PRs for architectural compliance
-- Manage tech debt and propose refactors
-- Mentor and guide engineering team
-- Respond to CEO's strategic proposals with technical assessment
+- Assess technical feasibility of epics and proposals
+- Make architecture decisions and document them
+- Review PRs for quality and architectural compliance
+- Break approved epics into technical components
+- Respond to issues labeled 'needs-cto' with technical assessment
+- Report findings back to CEO
 
-Your communication style:
-- Technical but accessible
-- Evidence-based, reference best practices
-- Pragmatic — balance ideal vs. deliverable
+Your workflow each cycle:
+1. Check for issues labeled 'needs-cto' — these are YOUR priority
+2. For each, provide a technical feasibility comment with:
+   - Complexity estimate (S/M/L/XL)
+   - Key risks and dependencies
+   - Recommended architecture approach
+   - Estimated effort in weeks
+3. After assessment, relabel the issue: remove 'needs-cto', add 'needs-breakdown'
+4. Check for open PRs and review them
+5. Post technical updates to Slack #engineering
 
-You communicate via GitHub Discussions (category: Engineering for tech topics, Strategy for C-suite decisions).
-You review PRs and create Issues for technical work.
+When assessing feasibility:
+- Be pragmatic, not theoretical
+- Reference the current stack: Python, Kubernetes, LiteLLM, GitHub Actions
+- Identify what can be reused vs. what needs building
+- Flag blockers clearly
 
-When evaluating a technical proposal:
-1. Assess complexity (T-shirt sizing: S/M/L/XL)
-2. Identify risks and dependencies
-3. Propose architecture approach
-4. Break into high-level tasks for Engineering Manager
-
-Current tech stack: Python, Kubernetes, LiteLLM, GitHub Actions, Weaviate.
-Current team: CEO, CTO (you), Engineer.
+You communicate via:
+- Slack: #engineering for tech discussions, #c-suite for strategic input
+- GitHub issue comments for technical assessments
+- PR reviews for code quality
 """
 
 
@@ -39,37 +44,30 @@ class CTOAgent(BaseAgent):
     """CTO agent with technical leadership capabilities."""
 
     def __init__(self):
-        super().__init__(
-            agent_id="cto",
-            persona=CTO_PERSONA,
-            model=None,  # Set from settings
-        )
+        super().__init__(agent_id="cto", persona=CTO_PERSONA)
         self._setup_tools()
 
     def _setup_tools(self) -> None:
-        """Register CTO-specific tools."""
         gh = GitHubTools(self.settings)
+        slack = SlackTools(self.settings)
 
         self.register_tool(
-            "create_issue",
-            gh.create_issue,
-            "Create a GitHub Issue for technical work",
+            "send_slack_message",
+            slack.send_message,
+            "Send a message to a Slack channel",
             {
                 "type": "object",
                 "properties": {
-                    "title": {"type": "string"},
-                    "body": {"type": "string"},
-                    "labels": {"type": "array", "items": {"type": "string"}},
-                    "assignee": {"type": "string", "description": "GitHub username to assign"},
+                    "channel": {"type": "string"},
+                    "text": {"type": "string"},
                 },
-                "required": ["title", "body"],
+                "required": ["channel", "text"],
             },
         )
-
         self.register_tool(
             "comment_on_issue",
             gh.comment_on_issue,
-            "Add a comment to an existing GitHub Issue",
+            "Add a technical assessment comment to an issue",
             {
                 "type": "object",
                 "properties": {
@@ -79,22 +77,20 @@ class CTOAgent(BaseAgent):
                 "required": ["issue_number", "body"],
             },
         )
-
         self.register_tool(
-            "post_discussion",
-            gh.create_discussion,
-            "Post in GitHub Discussions",
+            "create_issue",
+            gh.create_issue,
+            "Create a technical task or architecture issue",
             {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string"},
                     "body": {"type": "string"},
-                    "category": {"type": "string"},
+                    "labels": {"type": "array", "items": {"type": "string"}},
                 },
-                "required": ["title", "body", "category"],
+                "required": ["title", "body"],
             },
         )
-
         self.register_tool(
             "list_issues",
             gh.list_issues,
@@ -107,61 +103,45 @@ class CTOAgent(BaseAgent):
                 },
             },
         )
-
         self.register_tool(
             "list_pull_requests",
             gh.list_pull_requests,
             "List open pull requests for review",
             {
                 "type": "object",
-                "properties": {
-                    "limit": {"type": "integer", "description": "Max PRs to return"},
-                },
+                "properties": {"limit": {"type": "integer"}},
             },
         )
 
     async def perceive(self) -> list[dict]:
-        """CTO perceives: PRs to review, issues tagged for CTO, tech discussions."""
         gh = GitHubTools(self.settings)
         events = []
 
-        # Check PRs needing review
+        # Priority: issues needing CTO assessment
+        issues = await gh.list_issues(labels=["needs-cto"], limit=5)
+        for issue in issues:
+            events.append(
+                {
+                    "type": "needs_technical_assessment",
+                    "title": issue["title"],
+                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:600]}",
+                }
+            )
+
+        # PRs needing review
         prs = await gh.list_pull_requests(limit=5)
         for pr in prs:
             events.append(
                 {
                     "type": "pr_needs_review",
                     "title": pr["title"],
-                    "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
-                }
-            )
-
-        # Check issues needing CTO input
-        issues = await gh.list_issues(labels=["needs-cto"], limit=5)
-        for issue in issues:
-            events.append(
-                {
-                    "type": "issue_needs_cto",
-                    "title": issue["title"],
-                    "body": issue["body"][:500],
-                }
-            )
-
-        # Check engineering discussions
-        discussions = await gh.list_discussions(category="Engineering", limit=3)
-        for disc in discussions:
-            events.append(
-                {
-                    "type": "engineering_discussion",
-                    "title": disc["title"],
-                    "body": disc["body"][:300],
+                    "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}",
                 }
             )
 
         return events
 
     async def reflect(self, result: dict[str, Any]) -> None:
-        """CTO reflects on technical decisions."""
         self.log.info(
             "cto_reflection",
             actions_taken=len(result.get("actions", [])),

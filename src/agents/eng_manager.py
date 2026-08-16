@@ -4,25 +4,30 @@ from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.github_tools import GitHubTools
+from src.tools.slack_tools import SlackTools
 
 ENG_MANAGER_PERSONA = """You are the Engineering Manager at My IT Crew.
 
 Your responsibilities:
-- Break epics into actionable tasks (GitHub Issues)
-- Assign tasks to engineers by labeling them 'status/ready' + 'dept/engineering'
-- Track sprint progress and remove blockers
-- Run daily standups (post summaries in Discussions)
-- Ensure PRs get reviewed and merged promptly
-- Report delivery status to CTO
+- Take issues labeled 'needs-breakdown' and break them into actionable tasks
+- Each task should be small enough for one engineer to complete in 1-2 days
+- Label tasks with 'status/ready' + 'dept/engineering' when ready for pickup
+- Track what's in progress and remove blockers
+- Post daily standup summaries to Slack #standups
 
-Your workflow:
-1. Check for new epics or issues labeled 'needs-breakdown'
-2. Break them into smaller tasks with clear acceptance criteria
-3. Label tasks as 'status/ready' + 'dept/engineering' when ready for pickup
-4. Monitor in-progress work and flag blockers
-5. Close completed work and report to CTO
+Your workflow each cycle:
+1. Check for issues labeled 'needs-breakdown' — break these into tasks
+2. Check for issues labeled 'status/in-progress' — monitor progress
+3. Check for issues labeled 'status/blocked' — try to unblock
+4. Post a brief standup summary to #standups
 
-Current team: 1 Backend Engineer, 1 Frontend Engineer, 1 DevOps Engineer
+When breaking down work:
+- Create clear, specific issues with acceptance criteria
+- Include "Definition of Done" in each task
+- Label appropriately: 'status/ready', 'dept/engineering', 'priority/p1' or 'priority/p2'
+- Reference the parent epic in the task body
+
+Current team: Backend Engineer, DevOps Engineer
 """
 
 
@@ -35,10 +40,25 @@ class EngManagerAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
+        slack = SlackTools(self.settings)
+
+        self.register_tool(
+            "send_slack_message",
+            slack.send_message,
+            "Post to Slack (use #standups for standup, #engineering for discussions)",
+            {
+                "type": "object",
+                "properties": {
+                    "channel": {"type": "string"},
+                    "text": {"type": "string"},
+                },
+                "required": ["channel", "text"],
+            },
+        )
         self.register_tool(
             "create_issue",
             gh.create_issue,
-            "Create a GitHub Issue (task, subtask)",
+            "Create an engineering task",
             {
                 "type": "object",
                 "properties": {
@@ -74,39 +94,30 @@ class EngManagerAgent(BaseAgent):
                 },
             },
         )
-        self.register_tool(
-            "list_pull_requests",
-            gh.list_pull_requests,
-            "List open PRs",
-            {
-                "type": "object",
-                "properties": {"limit": {"type": "integer"}},
-            },
-        )
 
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
         events = []
 
-        # Epics needing breakdown
-        issues = await gh.list_issues(labels=["epic"], limit=5)
+        # Priority: issues needing breakdown
+        issues = await gh.list_issues(labels=["needs-breakdown"], limit=5)
         for issue in issues:
             events.append(
                 {
-                    "type": "epic_needs_breakdown",
+                    "type": "needs_breakdown",
                     "title": issue["title"],
-                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:400]}",
+                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
                 }
             )
 
-        # Check stale in-progress work
+        # Track in-progress work
         in_progress = await gh.list_issues(labels=["status/in-progress"], limit=10)
-        for issue in in_progress:
+        if in_progress:
             events.append(
                 {
-                    "type": "work_in_progress",
-                    "title": issue["title"],
-                    "body": f"Issue #{issue['number']} is in progress",
+                    "type": "progress_check",
+                    "title": f"{len(in_progress)} tasks in progress",
+                    "body": "\n".join(f"- #{i['number']}: {i['title']}" for i in in_progress),
                 }
             )
 

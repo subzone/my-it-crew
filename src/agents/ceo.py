@@ -8,33 +8,34 @@ from src.tools.slack_tools import SlackTools
 
 CEO_PERSONA = """You are the CEO of an AI-powered IT company called My IT Crew.
 
+CRITICAL RULES:
+- Before creating ANY new epic, check if there are existing open epics that haven't been completed yet.
+- If there are open epics still in progress, DO NOT create new ones. Instead, check their status and push for progress.
+- Only create a new epic when all existing epics are either completed or explicitly blocked.
+- Maximum 3 open epics at any time.
+
 Your responsibilities:
 - Set strategic direction for the company
-- Identify market opportunities and new initiatives
-- Coordinate across departments (CTO, CMO, CSO, CFO)
-- Write weekly company updates
-- Make final decisions on strategic matters
-- Create Epics (GitHub Issues) for new initiatives
+- Review progress on existing initiatives
+- Identify market opportunities ONLY when the team has capacity
+- Coordinate across departments via Slack #c-suite channel
+- Make go/no-go decisions on proposals from CTO
 
-Your communication style:
-- Clear, decisive, and visionary
-- Focus on outcomes and business impact
-- Delegate execution details to appropriate leads
+Your workflow each cycle:
+1. List all open issues labeled 'epic' — if there are open ones, focus on THOSE
+2. Check if any epic needs your decision (labeled 'needs-ceo')
+3. If epics are progressing well and team has capacity, consider ONE new initiative
+4. Post status updates to Slack #general for company visibility
+
+Decision framework:
+- When CTO provides feasibility assessment, make go/no-go decision
+- When items are labeled 'needs-ceo', respond with clear direction
+- Approve or reject proposals with reasoning
 
 You communicate via:
 - Slack: #general for company-wide updates, #c-suite for strategic discussions
 - GitHub Issues for tracking work (epics, features)
-- GitHub Discussions for long-form strategy docs
-You track work via GitHub Issues with the 'epic' label.
-
-When you identify an opportunity:
-1. Evaluate it (impact, feasibility, alignment with vision)
-2. If promising, create a GitHub Issue as an Epic
-3. Tag the CTO for technical feasibility assessment
-4. Post in Discussions for visibility
-
-Current company focus: Building autonomous AI agent capabilities.
-Current team: CEO (you), CTO, Engineer.
+- Comments on issues for decisions and feedback
 """
 
 
@@ -42,70 +43,56 @@ class CEOAgent(BaseAgent):
     """CEO agent with strategic planning capabilities."""
 
     def __init__(self):
-        super().__init__(
-            agent_id="ceo",
-            persona=CEO_PERSONA,
-            model=None,  # Set from settings
-        )
+        super().__init__(agent_id="ceo", persona=CEO_PERSONA)
         self._setup_tools()
 
     def _setup_tools(self) -> None:
-        """Register CEO-specific tools."""
         gh = GitHubTools(self.settings)
-
-        self.register_tool(
-            "create_issue",
-            gh.create_issue,
-            "Create a new GitHub Issue (epic, feature, opportunity)",
-            {
-                "type": "object",
-                "properties": {
-                    "title": {"type": "string", "description": "Issue title"},
-                    "body": {"type": "string", "description": "Issue body in markdown"},
-                    "labels": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Labels to apply",
-                    },
-                },
-                "required": ["title", "body"],
-            },
-        )
-
-        self.register_tool(
-            "post_discussion",
-            gh.create_discussion,
-            "Post a message in GitHub Discussions",
-            {
-                "type": "object",
-                "properties": {
-                    "title": {"type": "string", "description": "Discussion title"},
-                    "body": {"type": "string", "description": "Discussion body in markdown"},
-                    "category": {
-                        "type": "string",
-                        "description": "Discussion category (Announcements, Strategy, Engineering, General)",
-                    },
-                },
-                "required": ["title", "body", "category"],
-            },
-        )
-
         slack = SlackTools(self.settings)
 
         self.register_tool(
             "send_slack_message",
             slack.send_message,
-            "Send a message to a Slack channel (use channel name like #general or #c-suite)",
+            "Send a message to a Slack channel",
             {
                 "type": "object",
                 "properties": {
-                    "channel": {"type": "string", "description": "Channel name (e.g. #general)"},
-                    "text": {"type": "string", "description": "Message text (supports markdown)"},
+                    "channel": {
+                        "type": "string",
+                        "description": "Channel name (e.g. general, c-suite)",
+                    },
+                    "text": {"type": "string", "description": "Message text"},
                 },
                 "required": ["channel", "text"],
             },
         )
-
+        self.register_tool(
+            "create_issue",
+            gh.create_issue,
+            "Create a new GitHub Issue (epic, feature, opportunity). ONLY use when no open epics exist.",
+            {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "body": {"type": "string"},
+                    "labels": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["title", "body"],
+            },
+        )
+        self.register_tool(
+            "comment_on_issue",
+            gh.comment_on_issue,
+            "Add a decision or feedback comment to an existing issue",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "body": {"type": "string"},
+                },
+                "required": ["issue_number", "body"],
+            },
+        )
         self.register_tool(
             "list_issues",
             gh.list_issues,
@@ -113,57 +100,54 @@ class CEOAgent(BaseAgent):
             {
                 "type": "object",
                 "properties": {
-                    "labels": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Filter by labels",
-                    },
-                    "limit": {"type": "integer", "description": "Max results"},
+                    "labels": {"type": "array", "items": {"type": "string"}},
+                    "limit": {"type": "integer"},
                 },
             },
         )
 
     async def perceive(self) -> list[dict]:
-        """CEO perceives: new issues, discussion mentions, scheduled reviews."""
         gh = GitHubTools(self.settings)
         events = []
 
-        # Check for issues needing CEO attention
+        # Check issues needing CEO decision
         issues = await gh.list_issues(labels=["needs-ceo"], limit=5)
         for issue in issues:
             events.append(
                 {
-                    "type": "issue_needs_attention",
+                    "type": "needs_decision",
                     "title": issue["title"],
-                    "body": issue["body"][:500],
+                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
                 }
             )
 
-        # Check for unresolved discussions in Strategy category
-        discussions = await gh.list_discussions(category="Strategy", limit=5)
-        for disc in discussions:
+        # Check status of open epics
+        epics = await gh.list_issues(labels=["epic"], limit=10)
+        if epics:
             events.append(
                 {
-                    "type": "strategy_discussion",
-                    "title": disc["title"],
-                    "body": disc["body"][:500],
+                    "type": "epic_status_review",
+                    "title": f"{len(epics)} open epics to review",
+                    "body": "\n".join(
+                        f"- #{e['number']}: {e['title']} [labels: {', '.join(e.get('labels', []))}]"
+                        for e in epics
+                    ),
                 }
             )
 
-        # If no events, trigger a proactive scan
-        if not events:
+        # Only suggest new work if no open epics
+        if not epics and not issues:
             events.append(
                 {
-                    "type": "scheduled_review",
-                    "title": "Periodic strategic review",
-                    "body": "No pending items. Consider: reviewing open epics, identifying new opportunities, or posting a company update.",
+                    "type": "capacity_available",
+                    "title": "Team has capacity",
+                    "body": "No open epics or pending decisions. Consider proposing a new strategic initiative.",
                 }
             )
 
         return events
 
     async def reflect(self, result: dict[str, Any]) -> None:
-        """CEO reflects on decisions made."""
         self.log.info(
             "ceo_reflection",
             actions_taken=len(result.get("actions", [])),
