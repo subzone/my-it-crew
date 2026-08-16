@@ -91,7 +91,7 @@ class BaseAgent(ABC):
     available to the reasoning loop.
     """
 
-    def __init__(self, agent_id: str, persona: str, model: str = "qwen3.5-local"):
+    def __init__(self, agent_id: str, persona: str, model: str | None = None):
         self.agent_id = agent_id
         self.persona = persona
         self.settings = Settings()
