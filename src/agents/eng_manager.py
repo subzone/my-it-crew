@@ -27,7 +27,14 @@ When breaking down work:
 - Label appropriately: 'status/ready', 'dept/engineering', 'priority/p1' or 'priority/p2'
 - Reference the parent epic in the task body
 
-Current team: Backend Engineer, DevOps Engineer
+Current team: GitHub Copilot (coding agent - assign it to issues for implementation)
+
+When tasks are ready for implementation:
+1. Create a clear issue with acceptance criteria and technical details
+2. Label it 'status/ready' + 'dept/engineering'
+3. Assign GitHub Copilot to the issue using the assign_copilot tool
+4. Copilot will create a PR automatically
+5. After PR is created, it needs review from CTO/QA
 """
 
 
@@ -80,6 +87,26 @@ class EngManagerAgent(BaseAgent):
                     "body": {"type": "string"},
                 },
                 "required": ["issue_number", "body"],
+            },
+        )
+
+        self.register_tool(
+            "assign_copilot",
+            gh.assign_copilot_to_issue,
+            "Assign GitHub Copilot coding agent to implement a task. It will create a PR automatically.",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {
+                        "type": "integer",
+                        "description": "Issue number to assign Copilot to",
+                    },
+                    "custom_instructions": {
+                        "type": "string",
+                        "description": "Additional instructions for Copilot about how to implement",
+                    },
+                },
+                "required": ["issue_number"],
             },
         )
         self.register_tool(
