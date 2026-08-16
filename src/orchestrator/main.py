@@ -55,11 +55,11 @@ class Orchestrator:
         """Configure agent run schedules."""
         interval = self.settings.cycle_interval_seconds
 
-        # C-Suite: every 30 minutes
+        # C-Suite: every 5 minutes
         self.scheduler.add_job(
             self.run_agent,
             "interval",
-            seconds=interval * 6,
+            seconds=interval,
             args=["ceo"],
             id="ceo_cycle",
             name="CEO Cycle",
