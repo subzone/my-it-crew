@@ -104,6 +104,65 @@ class MattermostTools:
         logger.info("mattermost_message_sent", channel=channel)
         return {"status": "sent", "channel": channel, "post_id": post_id}
 
+    async def get_direct_messages(self, limit: int = 5) -> list[dict[str, Any]]:
+        """Get recent direct messages sent to this bot."""
+        # Get bot's own user ID
+        url = f"{self.base_url}/users/me"
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=self.headers)
+            if resp.status_code != 200:
+                return []
+            bot_user_id = resp.json()["id"]
+
+            # Get bot's channels (includes DMs)
+            url = f"{self.base_url}/users/{bot_user_id}/channels"
+            resp = await client.get(url, headers=self.headers)
+            if resp.status_code != 200:
+                return []
+
+            channels = resp.json()
+            messages = []
+
+            for ch in channels:
+                # Only check direct message channels (type "D")
+                if ch.get("type") != "D":
+                    continue
+
+                # Get recent posts
+                url = f"{self.base_url}/channels/{ch['id']}/posts"
+                resp = await client.get(url, params={"per_page": limit}, headers=self.headers)
+                if resp.status_code != 200:
+                    continue
+
+                data = resp.json()
+                for post_id in data.get("order", [])[:limit]:
+                    post = data["posts"][post_id]
+                    # Skip bot's own messages
+                    if post.get("user_id") == bot_user_id:
+                        continue
+                    messages.append(
+                        {
+                            "text": post.get("message", ""),
+                            "user": post.get("user_id", ""),
+                            "channel_id": ch["id"],
+                            "ts": post.get("create_at", ""),
+                        }
+                    )
+
+            return messages
+
+    async def reply_to_dm(self, channel_id: str, text: str) -> dict[str, Any]:
+        """Reply to a direct message."""
+        url = f"{self.base_url}/posts"
+        payload = {"channel_id": channel_id, "message": text}
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json=payload, headers=self.headers)
+            if resp.status_code not in (200, 201):
+                return {"error": f"Failed to reply: {resp.status_code}"}
+            logger.info("mattermost_dm_replied", channel_id=channel_id)
+            return {"status": "replied", "channel_id": channel_id}
+
     async def get_channel_history(self, channel: str, limit: int = 10) -> list[dict[str, Any]]:
         """Get recent messages from a channel."""
         channel_id = await self._get_channel_id(channel)

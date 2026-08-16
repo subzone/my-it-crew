@@ -40,3 +40,15 @@ class ChatTools:
         if not self._backend:
             return []
         return await self._backend.get_channel_history(channel=channel, limit=limit)
+
+    async def get_direct_messages(self, limit: int = 5) -> list[dict[str, Any]]:
+        """Get direct messages sent to this bot."""
+        if not self._backend or not hasattr(self._backend, "get_direct_messages"):
+            return []
+        return await self._backend.get_direct_messages(limit=limit)
+
+    async def reply_to_dm(self, channel_id: str, text: str) -> dict[str, Any]:
+        """Reply to a direct message."""
+        if not self._backend or not hasattr(self._backend, "reply_to_dm"):
+            return {"error": "DM reply not supported"}
+        return await self._backend.reply_to_dm(channel_id=channel_id, text=text)
