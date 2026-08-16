@@ -128,9 +128,9 @@ class CTOAgent(BaseAgent):
         )
 
         self.register_tool(
-            "assign_copilot",
-            gh.assign_copilot_to_issue,
-            "Assign a Copilot agent to work on an issue. Use after creating breakdown tasks.",
+            "assign_copilot_agent",
+            gh.update_issue_labels,
+            "Assign a Copilot agent by adding a label. Available: copilot/backend-developer, copilot/qa-engineer, copilot/pr-reviewer, copilot/pr-approver, copilot/documenter, copilot/diagram-architect",
             {
                 "type": "object",
                 "properties": {

@@ -95,9 +95,9 @@ class EngManagerAgent(BaseAgent):
         )
 
         self.register_tool(
-            "assign_copilot",
-            gh.assign_copilot_to_issue,
-            "Assign GitHub Copilot coding agent to implement a task. It will create a PR automatically.",
+            "assign_copilot_agent",
+            gh.update_issue_labels,
+            "Assign a Copilot agent to implement an issue. Adds a label that triggers auto-assignment. Available agents: copilot/backend-developer, copilot/qa-engineer, copilot/documenter, copilot/diagram-architect",
             {
                 "type": "object",
                 "properties": {
@@ -105,12 +105,13 @@ class EngManagerAgent(BaseAgent):
                         "type": "integer",
                         "description": "Issue number to assign Copilot to",
                     },
-                    "custom_instructions": {
-                        "type": "string",
-                        "description": "Additional instructions for Copilot about how to implement",
+                    "add": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Label to trigger Copilot, e.g. ['copilot/backend-developer']",
                     },
                 },
-                "required": ["issue_number"],
+                "required": ["issue_number", "add"],
             },
         )
         self.register_tool(
