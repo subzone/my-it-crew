@@ -3,8 +3,8 @@
 from typing import Any
 
 from src.agents.base import BaseAgent
+from src.tools.chat_tools import ChatTools
 from src.tools.github_tools import GitHubTools
-from src.tools.slack_tools import SlackTools
 
 ENG_MANAGER_PERSONA = """You are the Engineering Manager at My IT Crew.
 
@@ -51,11 +51,11 @@ class EngManagerAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
-        slack = SlackTools(self.settings)
+        chat = ChatTools(self.settings)
 
         self.register_tool(
             "send_slack_message",
-            slack.send_message,
+            chat.send_message,
             "Post to Slack (use #standups for standup, #engineering for discussions)",
             {
                 "type": "object",

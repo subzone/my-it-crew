@@ -3,8 +3,8 @@
 from typing import Any
 
 from src.agents.base import BaseAgent
+from src.tools.chat_tools import ChatTools
 from src.tools.github_tools import GitHubTools
-from src.tools.slack_tools import SlackTools
 
 MARKETER_PERSONA = """You are the Marketing Lead at My IT Crew.
 
@@ -43,11 +43,11 @@ class MarketerAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
-        slack = SlackTools(self.settings)
+        chat = ChatTools(self.settings)
 
         self.register_tool(
             "send_slack_message",
-            slack.send_message,
+            chat.send_message,
             "Post to Slack (#marketing for content, #general for announcements)",
             {
                 "type": "object",
@@ -114,11 +114,11 @@ class MarketerAgent(BaseAgent):
 
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
-        slack = SlackTools(self.settings)
+        chat = ChatTools(self.settings)
         events = []
 
         # Check Slack #marketing for requests from humans
-        messages = await slack.get_channel_history(channel="marketing", limit=5)
+        messages = await chat.get_channel_history(channel="marketing", limit=5)
         for msg in messages:
             if msg.get("user") and msg.get("text"):
                 events.append(

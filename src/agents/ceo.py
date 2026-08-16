@@ -3,8 +3,8 @@
 from typing import Any
 
 from src.agents.base import BaseAgent
+from src.tools.chat_tools import ChatTools
 from src.tools.github_tools import GitHubTools
-from src.tools.slack_tools import SlackTools
 
 CEO_PERSONA = """You are the CEO of an AI-powered IT company called My IT Crew.
 
@@ -54,11 +54,11 @@ class CEOAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
-        slack = SlackTools(self.settings)
+        chat = ChatTools(self.settings)
 
         self.register_tool(
             "send_slack_message",
-            slack.send_message,
+            chat.send_message,
             "Send a message to a Slack channel",
             {
                 "type": "object",
@@ -114,11 +114,11 @@ class CEOAgent(BaseAgent):
 
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
-        slack = SlackTools(self.settings)
+        chat = ChatTools(self.settings)
         events = []
 
         # Check Slack #general for new messages from humans (board/founders)
-        messages = await slack.get_channel_history(channel="general", limit=5)
+        messages = await chat.get_channel_history(channel="general", limit=5)
         for msg in messages:
             # Skip bot messages (our own agents)
             if msg.get("user") and msg.get("text"):
