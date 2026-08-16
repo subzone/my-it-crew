@@ -44,7 +44,6 @@ class TASpecialistAgent(BaseAgent):
         self._setup_tools()
 
     def _setup_tools(self) -> None:
-        gh = GitHubTools(self.settings)
         # Override repo to talent repo
         from src.config import Settings
 
