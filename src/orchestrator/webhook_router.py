@@ -1,7 +1,6 @@
 """Webhook router — receives Mattermost outgoing webhooks and triggers the right agent."""
 
 import os
-import re
 
 import httpx
 import structlog
@@ -33,9 +32,10 @@ async def handle_webhook(request: web.Request) -> web.Response:
 
     logger.info("webhook_received", user=user_name, text=text[:100])
 
-    # Find @mentions
-    mentions = re.findall(r"@(\w[\w-]*)", text.lower())
+    # Find agent mentions (with or without @)
+    text_lower = text.lower()
     triggered = []
+    mentions = [name for name in MENTION_MAP if name in text_lower]
 
     async with httpx.AsyncClient() as client:
         for mention in mentions:
