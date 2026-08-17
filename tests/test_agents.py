@@ -38,6 +38,10 @@ class TestAgentInstantiation:
         assert agent.agent_id == "engineer"
         assert "list_pull_requests" in agent.tools
         assert "comment_on_issue" in agent.tools
+        assert "create_branch" in agent.tools
+        assert "get_file" in agent.tools
+        assert "push_files" in agent.tools
+        assert "create_pull_request" in agent.tools
 
     def test_eng_manager_agent_init(self):
         agent = EngManagerAgent()
@@ -70,7 +74,10 @@ class TestAgentInstantiation:
         assert "list_pull_requests" in agent.tools
         assert "comment_on_issue" in agent.tools
         assert "list_issues" in agent.tools
-        assert "create_issue" in agent.tools
+        assert "create_branch" in agent.tools
+        assert "get_file" in agent.tools
+        assert "push_files" in agent.tools
+        assert "create_pull_request" in agent.tools
 
     def test_fullstack_engineer_agent_init(self):
         agent = FullstackEngineerAgent()
@@ -78,7 +85,11 @@ class TestAgentInstantiation:
         assert "list_pull_requests" in agent.tools
         assert "comment_on_issue" in agent.tools
         assert "list_issues" in agent.tools
-        assert "create_issue" in agent.tools
+        assert "create_branch" in agent.tools
+        assert "get_file" in agent.tools
+        assert "push_files" in agent.tools
+        assert "create_pull_request" in agent.tools
+        assert "create_or_update_file" in agent.tools
         assert "update_issue_labels" in agent.tools
 
 

@@ -1,36 +1,47 @@
-"""Engineer Agent — Code review and PR management."""
+"""Engineer Agent — Code implementation and PR management."""
 
 from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.chat_tools import ChatTools
+from src.tools.coding_tools import CodingTools
 from src.tools.github_tools import GitHubTools
 
 ENGINEER_PERSONA = """You are a Senior Software Engineer at My IT Crew.
 
 Your responsibilities:
-- Review PRs created by Copilot and other contributors
-- Ensure code quality, test coverage, and documentation
-- Comment on PRs with feedback or approve them
-- Pick up tasks labeled 'status/ready' + 'dept/engineering' that Copilot hasn't handled
+- Pick up tasks labeled 'status/ready' + 'dept/engineering' and IMPLEMENT them
+- Write production-quality Python code with tests
+- Create feature branches, write code, commit, and open PRs
+- Review PRs created by others
 - Fix issues found during QA review
 - Post updates to #engineering Slack channel
-- Mention QA Engineer when a PR is ready for testing
-- Mention Eng Manager when a PR is blocked or needs discussion
-- Always post your review status to #engineering
 
-Your workflow each cycle:
-1. Check for open PRs — review them for quality
-2. Check for tasks that are stuck or need manual intervention
-3. Comment on PRs with approval or change requests
-4. Post to #engineering about PR status
+Your development workflow:
+1. Check for tasks labeled 'status/ready' + 'dept/engineering'
+2. For each task you pick up:
+   a. Read the issue to understand requirements
+   b. Create a feature branch (e.g. 'feat/issue-42-add-user-api')
+   c. Read existing code to understand the codebase
+   d. Write your implementation (create/update files)
+   e. Push all files in a single commit
+   f. Open a PR linking the issue (use 'Fixes #N' in the body)
+   g. Post to #engineering that you've opened a PR
+3. Also review open PRs from others
 
-Tech stack: Python, asyncio, Pydantic, GitHub API, Kubernetes.
+Tech stack: Python 3.11+, asyncio, Pydantic, FastAPI, structlog, pytest.
+
+Coding standards:
+- Type hints on all functions
+- Docstrings on all public methods
+- Error handling with proper logging
+- No hardcoded secrets — use environment variables
+- Follow existing code patterns in the repo
 """
 
 
 class EngineerAgent(BaseAgent):
-    """Engineer agent that reviews code and manages PRs."""
+    """Engineer agent that writes code and manages PRs."""
 
     def __init__(self):
         super().__init__(agent_id="engineer", persona=ENGINEER_PERSONA)
@@ -38,12 +49,13 @@ class EngineerAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
+        code = CodingTools(self.settings)
         chat = ChatTools(self.settings)
 
         self.register_tool(
             "send_slack_message",
             chat.send_message,
-            "Post to Slack #engineering",
+            "Post to Slack #engineering or #standups",
             {
                 "type": "object",
                 "properties": {
@@ -56,7 +68,7 @@ class EngineerAgent(BaseAgent):
         self.register_tool(
             "list_issues",
             gh.list_issues,
-            "List open issues",
+            "List open issues to find work",
             {
                 "type": "object",
                 "properties": {
@@ -68,7 +80,7 @@ class EngineerAgent(BaseAgent):
         self.register_tool(
             "comment_on_issue",
             gh.comment_on_issue,
-            "Comment on an issue or provide code review feedback",
+            "Comment on an issue (e.g. to claim it or ask questions)",
             {
                 "type": "object",
                 "properties": {
@@ -87,6 +99,121 @@ class EngineerAgent(BaseAgent):
                 "properties": {"limit": {"type": "integer"}},
             },
         )
+        self.register_tool(
+            "update_issue_labels",
+            gh.update_issue_labels,
+            "Update issue labels (use to mark as in-progress when you start work)",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "add": {"type": "array", "items": {"type": "string"}},
+                    "remove": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        # Coding tools
+        self.register_tool(
+            "create_branch",
+            code.create_branch,
+            "Create a new git branch for your work (e.g. 'feat/issue-42-user-api')",
+            {
+                "type": "object",
+                "properties": {
+                    "branch_name": {"type": "string", "description": "New branch name"},
+                    "from_branch": {
+                        "type": "string",
+                        "description": "Source branch (default: main)",
+                    },
+                },
+                "required": ["branch_name"],
+            },
+        )
+        self.register_tool(
+            "get_file",
+            code.get_file,
+            "Read a file from the repo to understand existing code",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "File path (e.g. 'src/config.py')"},
+                    "branch": {"type": "string", "description": "Branch to read from"},
+                },
+                "required": ["path"],
+            },
+        )
+        self.register_tool(
+            "get_directory_tree",
+            code.get_directory_tree,
+            "List files in a directory to understand project structure",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Directory path ('' for root)"},
+                    "branch": {"type": "string", "description": "Branch to read from"},
+                },
+            },
+        )
+        self.register_tool(
+            "create_or_update_file",
+            code.create_or_update_file,
+            "Create or update a single file. For updates, provide the sha from get_file.",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "content": {"type": "string", "description": "Full file content"},
+                    "message": {"type": "string", "description": "Commit message"},
+                    "branch": {"type": "string"},
+                    "sha": {
+                        "type": "string",
+                        "description": "File SHA for updates (from get_file). Omit for new files.",
+                    },
+                },
+                "required": ["path", "content", "message", "branch"],
+            },
+        )
+        self.register_tool(
+            "push_files",
+            code.push_files,
+            "Push multiple files in a single commit. More efficient for multi-file changes.",
+            {
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "path": {"type": "string"},
+                                "content": {"type": "string"},
+                            },
+                            "required": ["path", "content"],
+                        },
+                        "description": "List of files with path and content",
+                    },
+                    "message": {"type": "string", "description": "Commit message"},
+                    "branch": {"type": "string"},
+                },
+                "required": ["files", "message", "branch"],
+            },
+        )
+        self.register_tool(
+            "create_pull_request",
+            code.create_pull_request,
+            "Open a PR after pushing code. Use 'Fixes #N' in body to auto-close issues.",
+            {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "body": {"type": "string", "description": "PR description with 'Fixes #N'"},
+                    "head": {"type": "string", "description": "Your feature branch"},
+                    "base": {"type": "string", "description": "Target branch (default: main)"},
+                },
+                "required": ["title", "body", "head"],
+            },
+        )
 
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
@@ -99,7 +226,18 @@ class EngineerAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
-        # Check for PRs needing review
+        # Priority: ready tasks to implement
+        issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=3)
+        for issue in issues:
+            events.append(
+                {
+                    "type": "ready_task",
+                    "title": issue["title"],
+                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
+                }
+            )
+
+        # Also check for PRs needing review
         prs = await gh.list_pull_requests(limit=5)
         for pr in prs:
             events.append(
@@ -110,7 +248,7 @@ class EngineerAgent(BaseAgent):
                 }
             )
 
-        # Check for stuck tasks
+        # Check for blocked tasks
         issues = await gh.list_issues(labels=["status/blocked"], limit=5)
         for issue in issues:
             events.append(

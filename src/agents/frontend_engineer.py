@@ -4,29 +4,34 @@ from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.chat_tools import ChatTools
+from src.tools.coding_tools import CodingTools
 from src.tools.github_tools import GitHubTools
 
 FRONTEND_ENGINEER_PERSONA = """You are a Senior Frontend Engineer at My IT Crew.
 
 Your responsibilities:
+- Pick up tasks labeled 'status/ready' + 'dept/frontend' and IMPLEMENT them
 - Build and maintain web UIs, dashboards, and client-side applications
-- Review PRs touching frontend code (React, TypeScript, CSS)
-- Pick up tasks labeled 'status/ready' + 'dept/frontend' or 'dept/engineering' with frontend scope
-- Ensure accessibility, responsiveness, and performance
-- Write tests using Vitest/Playwright/Testing Library
+- Create feature branches, write code, commit, and open PRs
+- Review PRs touching frontend code
 - Post updates to #engineering Slack channel
 
-Your workflow each cycle:
-1. Check for open PRs with frontend changes — review them
-2. Check for issues labeled 'status/ready' + 'dept/frontend' — pick up and implement
-3. Comment on PRs with feedback or approve them
-4. Post to #engineering about completed work
+Your development workflow:
+1. Check for issues labeled 'status/ready' + 'dept/frontend'
+2. For each task you pick up:
+   a. Read the issue to understand requirements
+   b. Create a feature branch (e.g. 'feat/issue-42-dashboard-ui')
+   c. Read existing code to understand the codebase structure
+   d. Write your implementation (components, styles, tests)
+   e. Push all files in a single commit
+   f. Open a PR linking the issue (use 'Fixes #N' in the body)
+   g. Post to #engineering that you've opened a PR
+3. Also review open PRs with frontend changes
 
 Tech stack: TypeScript, React, Next.js, Tailwind CSS, Vite, Vitest, Playwright.
-When building dashboards for the IT crew, use clean data visualization.
 
 Coding standards:
-- TypeScript strict mode
+- TypeScript strict mode — no `any` types
 - Component-driven architecture
 - Accessible (WCAG 2.1 AA)
 - Responsive design (mobile-first)
@@ -43,6 +48,7 @@ class FrontendEngineerAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
+        code = CodingTools(self.settings)
         chat = ChatTools(self.settings)
 
         self.register_tool(
@@ -73,7 +79,7 @@ class FrontendEngineerAgent(BaseAgent):
         self.register_tool(
             "comment_on_issue",
             gh.comment_on_issue,
-            "Comment on an issue or provide code review feedback",
+            "Comment on an issue (claim it or ask questions)",
             {
                 "type": "object",
                 "properties": {
@@ -93,17 +99,95 @@ class FrontendEngineerAgent(BaseAgent):
             },
         )
         self.register_tool(
-            "create_issue",
-            gh.create_issue,
-            "Create a frontend task or bug report",
+            "update_issue_labels",
+            gh.update_issue_labels,
+            "Update issue labels (mark as in-progress when starting work)",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "add": {"type": "array", "items": {"type": "string"}},
+                    "remove": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        # Coding tools
+        self.register_tool(
+            "create_branch",
+            code.create_branch,
+            "Create a new git branch for your work",
+            {
+                "type": "object",
+                "properties": {
+                    "branch_name": {"type": "string"},
+                    "from_branch": {"type": "string"},
+                },
+                "required": ["branch_name"],
+            },
+        )
+        self.register_tool(
+            "get_file",
+            code.get_file,
+            "Read a file from the repo",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "branch": {"type": "string"},
+                },
+                "required": ["path"],
+            },
+        )
+        self.register_tool(
+            "get_directory_tree",
+            code.get_directory_tree,
+            "List files in a directory",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "branch": {"type": "string"},
+                },
+            },
+        )
+        self.register_tool(
+            "push_files",
+            code.push_files,
+            "Push multiple files in a single commit",
+            {
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "path": {"type": "string"},
+                                "content": {"type": "string"},
+                            },
+                            "required": ["path", "content"],
+                        },
+                    },
+                    "message": {"type": "string"},
+                    "branch": {"type": "string"},
+                },
+                "required": ["files", "message", "branch"],
+            },
+        )
+        self.register_tool(
+            "create_pull_request",
+            code.create_pull_request,
+            "Open a PR. Use 'Fixes #N' in body to link issues.",
             {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string"},
                     "body": {"type": "string"},
-                    "labels": {"type": "array", "items": {"type": "string"}},
+                    "head": {"type": "string"},
+                    "base": {"type": "string"},
                 },
-                "required": ["title", "body"],
+                "required": ["title", "body", "head"],
             },
         )
 
@@ -119,6 +203,17 @@ class FrontendEngineerAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
+        # Priority: frontend tasks to implement
+        issues = await gh.list_issues(labels=["dept/frontend", "status/ready"], limit=3)
+        for issue in issues:
+            events.append(
+                {
+                    "type": "frontend_task",
+                    "title": issue["title"],
+                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
+                }
+            )
+
         # Check for PRs needing review
         prs = await gh.list_pull_requests(limit=5)
         for pr in prs:
@@ -127,17 +222,6 @@ class FrontendEngineerAgent(BaseAgent):
                     "type": "pr_needs_review",
                     "title": pr["title"],
                     "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
-                }
-            )
-
-        # Check for frontend tasks
-        issues = await gh.list_issues(labels=["dept/frontend", "status/ready"], limit=5)
-        for issue in issues:
-            events.append(
-                {
-                    "type": "frontend_task",
-                    "title": issue["title"],
-                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:300]}",
                 }
             )
 

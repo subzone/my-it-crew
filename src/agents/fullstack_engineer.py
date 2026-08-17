@@ -4,31 +4,37 @@ from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.chat_tools import ChatTools
+from src.tools.coding_tools import CodingTools
 from src.tools.github_tools import GitHubTools
 
 FULLSTACK_ENGINEER_PERSONA = """You are a Senior Fullstack Engineer at My IT Crew.
 
 Your responsibilities:
-- Implement end-to-end features spanning backend APIs and frontend UIs
-- Pick up tasks labeled 'status/ready' + 'dept/engineering' that need both backend and frontend work
-- Create and review PRs for full-stack features
+- Pick up tasks labeled 'status/ready' + 'dept/engineering' and IMPLEMENT end-to-end features
+- Write both backend (Python) and frontend (TypeScript/React) code
+- Create feature branches, write code, commit, and open PRs
 - Build integrations between services (APIs, webhooks, event handlers)
-- Write comprehensive tests (unit + integration + e2e)
+- Write comprehensive tests (unit + integration)
 - Post updates to #engineering Slack channel
-- Mention QA Engineer when a feature is ready for testing
 
-Your workflow each cycle:
-1. Check for tasks labeled 'status/ready' + 'dept/engineering' — pick up full-stack work
-2. Check for open PRs — review for end-to-end correctness
-3. Identify integration gaps between frontend and backend
-4. Post to #engineering about progress
-5. Post standup updates to #standups
+Your development workflow:
+1. Check for tasks labeled 'status/ready' + 'dept/engineering'
+2. For each task you pick up:
+   a. Read the issue to understand requirements
+   b. Create a feature branch (e.g. 'feat/issue-42-user-dashboard')
+   c. Read existing code to understand the codebase
+   d. Implement backend first (models, service layer, endpoints)
+   e. Then implement frontend (components, hooks, pages)
+   f. Add tests for both layers
+   g. Push all files in a single commit
+   h. Open a PR linking the issue (use 'Fixes #N' in the body)
+   i. Post to #engineering that you've opened a PR
+3. Also review open PRs for end-to-end correctness
 
 Tech stack:
 - Backend: Python 3.11+, asyncio, Pydantic, FastAPI, PostgreSQL
 - Frontend: TypeScript, React, Next.js, Tailwind CSS
-- Infrastructure: Kubernetes, GitHub Actions, Docker
-- APIs: REST + OpenAPI, GraphQL where appropriate
+- Infrastructure: Kubernetes, Docker, GitHub Actions
 - Testing: pytest, Vitest, Playwright
 
 Coding standards:
@@ -36,7 +42,6 @@ Coding standards:
 - API-first design — define contracts before implementation
 - Error handling with proper user-facing messages
 - Structured logging with structlog
-- Tests cover happy path + edge cases + error conditions
 - No hardcoded secrets — use environment variables
 """
 
@@ -50,6 +55,7 @@ class FullstackEngineerAgent(BaseAgent):
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
+        code = CodingTools(self.settings)
         chat = ChatTools(self.settings)
 
         self.register_tool(
@@ -80,7 +86,7 @@ class FullstackEngineerAgent(BaseAgent):
         self.register_tool(
             "comment_on_issue",
             gh.comment_on_issue,
-            "Comment on an issue or provide review feedback",
+            "Comment on an issue (claim it or ask questions)",
             {
                 "type": "object",
                 "properties": {
@@ -100,39 +106,111 @@ class FullstackEngineerAgent(BaseAgent):
             },
         )
         self.register_tool(
-            "create_issue",
-            gh.create_issue,
-            "Create a task, bug report, or sub-task",
+            "update_issue_labels",
+            gh.update_issue_labels,
+            "Update issue labels (mark as in-progress when starting work)",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "add": {"type": "array", "items": {"type": "string"}},
+                    "remove": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        # Coding tools
+        self.register_tool(
+            "create_branch",
+            code.create_branch,
+            "Create a new git branch for your work",
+            {
+                "type": "object",
+                "properties": {
+                    "branch_name": {"type": "string"},
+                    "from_branch": {"type": "string"},
+                },
+                "required": ["branch_name"],
+            },
+        )
+        self.register_tool(
+            "get_file",
+            code.get_file,
+            "Read a file from the repo to understand existing code",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "branch": {"type": "string"},
+                },
+                "required": ["path"],
+            },
+        )
+        self.register_tool(
+            "get_directory_tree",
+            code.get_directory_tree,
+            "List files in a directory",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "branch": {"type": "string"},
+                },
+            },
+        )
+        self.register_tool(
+            "create_or_update_file",
+            code.create_or_update_file,
+            "Create or update a single file. For updates provide sha from get_file.",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "content": {"type": "string"},
+                    "message": {"type": "string"},
+                    "branch": {"type": "string"},
+                    "sha": {"type": "string"},
+                },
+                "required": ["path", "content", "message", "branch"],
+            },
+        )
+        self.register_tool(
+            "push_files",
+            code.push_files,
+            "Push multiple files in a single commit. Best for multi-file features.",
+            {
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "path": {"type": "string"},
+                                "content": {"type": "string"},
+                            },
+                            "required": ["path", "content"],
+                        },
+                    },
+                    "message": {"type": "string"},
+                    "branch": {"type": "string"},
+                },
+                "required": ["files", "message", "branch"],
+            },
+        )
+        self.register_tool(
+            "create_pull_request",
+            code.create_pull_request,
+            "Open a PR. Use 'Fixes #N' in body to auto-close issues.",
             {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string"},
                     "body": {"type": "string"},
-                    "labels": {"type": "array", "items": {"type": "string"}},
+                    "head": {"type": "string"},
+                    "base": {"type": "string"},
                 },
-                "required": ["title", "body"],
-            },
-        )
-        self.register_tool(
-            "update_issue_labels",
-            gh.update_issue_labels,
-            "Update issue labels (e.g. mark as in-progress, done, blocked)",
-            {
-                "type": "object",
-                "properties": {
-                    "issue_number": {"type": "integer"},
-                    "add": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Labels to add",
-                    },
-                    "remove": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Labels to remove",
-                    },
-                },
-                "required": ["issue_number"],
+                "required": ["title", "body", "head"],
             },
         )
 
@@ -149,7 +227,7 @@ class FullstackEngineerAgent(BaseAgent):
             )
 
         # Check for engineering tasks ready for pickup
-        issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=5)
+        issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=3)
         for issue in issues:
             events.append(
                 {
