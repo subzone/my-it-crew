@@ -35,7 +35,7 @@ class TestAgentInstantiation:
 
     def test_engineer_agent_init(self):
         agent = EngineerAgent()
-        assert agent.agent_id == "engineer"
+        assert agent.agent_id == "nova"
         assert "list_pull_requests" in agent.tools
         assert "comment_on_issue" in agent.tools
         assert "create_branch" in agent.tools
@@ -70,7 +70,7 @@ class TestAgentInstantiation:
 
     def test_frontend_engineer_agent_init(self):
         agent = FrontendEngineerAgent()
-        assert agent.agent_id == "frontend-engineer"
+        assert agent.agent_id == "kai"
         assert "list_pull_requests" in agent.tools
         assert "comment_on_issue" in agent.tools
         assert "list_issues" in agent.tools
@@ -81,7 +81,7 @@ class TestAgentInstantiation:
 
     def test_fullstack_engineer_agent_init(self):
         agent = FullstackEngineerAgent()
-        assert agent.agent_id == "fullstack-engineer"
+        assert agent.agent_id == "zara"
         assert "list_pull_requests" in agent.tools
         assert "comment_on_issue" in agent.tools
         assert "list_issues" in agent.tools
@@ -180,6 +180,11 @@ class TestAgentPerceive:
             ),
             patch(
                 "src.tools.github_tools.GitHubTools.list_issues",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch(
+                "src.tools.chat_tools.ChatTools.get_direct_messages",
                 new_callable=AsyncMock,
                 return_value=[],
             ),

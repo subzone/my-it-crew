@@ -1,0 +1,93 @@
+# LiteLLM Proxy Configuration
+# Routes model requests to the appropriate provider.
+#
+# REQUIRED ENV VARS (set in your deployment/secrets):
+#   OPENROUTER_API_KEY  — from https://openrouter.ai/keys
+#   SAMBANOVA_API_KEY   — from https://cloud.sambanova.ai/apis
+#
+# Local models (Ollama) need no API key.
+
+model_list:
+  # ─── Local Models (Ollama) ───────────────────────────────────────────
+  - model_name: nemotron-nano
+    litellm_params:
+      model: ollama/nemotron-nano
+      api_base: http://ollama.ollama.svc:11434
+
+  - model_name: nemotron-super
+    litellm_params:
+      model: ollama/nemotron-super
+      api_base: http://ollama.ollama.svc:11434
+
+  - model_name: nemotron-ultra
+    litellm_params:
+      model: ollama/nemotron-ultra
+      api_base: http://ollama.ollama.svc:11434
+
+  # ─── OpenRouter Models ───────────────────────────────────────────────
+  # Prefix: openrouter/ — routes through openrouter.ai
+  - model_name: openrouter/qwen/qwen3-coder
+    litellm_params:
+      model: openrouter/qwen/qwen3-coder
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
+  - model_name: openrouter/deepseek/deepseek-r1
+    litellm_params:
+      model: openrouter/deepseek/deepseek-r1
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
+  - model_name: openrouter/google/gemini-2.5-flash
+    litellm_params:
+      model: openrouter/google/gemini-2.5-flash
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
+  - model_name: openrouter/anthropic/claude-sonnet-4
+    litellm_params:
+      model: openrouter/anthropic/claude-sonnet-4
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
+  # ─── SambaNova Models ────────────────────────────────────────────────
+  # Prefix: sambanova/ — routes through SambaNova Cloud
+  - model_name: sambanova/DeepSeek-R1
+    litellm_params:
+      model: sambanova/DeepSeek-R1
+      api_key: os.environ/SAMBANOVA_API_KEY
+      api_base: https://api.sambanova.ai/v1
+
+  - model_name: sambanova/Meta-Llama-3.3-70B-Instruct
+    litellm_params:
+      model: sambanova/Meta-Llama-3.3-70B-Instruct
+      api_key: os.environ/SAMBANOVA_API_KEY
+      api_base: https://api.sambanova.ai/v1
+
+  - model_name: sambanova/QwQ-32B
+    litellm_params:
+      model: sambanova/QwQ-32B
+      api_key: os.environ/SAMBANOVA_API_KEY
+      api_base: https://api.sambanova.ai/v1
+
+litellm_settings:
+  # Fallback to a cheaper model if primary fails
+  fallbacks:
+    - nemotron-super: [nemotron-nano]
+    - openrouter/qwen/qwen3-coder: [nemotron-super]
+    - sambanova/DeepSeek-R1: [openrouter/deepseek/deepseek-r1]
+  
+  # Timeout settings
+  request_timeout: 120
+  
+  # Rate limiting (requests per minute per model)
+  max_budget: 100.0  # USD monthly cap
+  
+  # Caching (reduce duplicate calls)
+  cache: true
+  cache_params:
+    type: local
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/LITELLM_DATABASE_URL

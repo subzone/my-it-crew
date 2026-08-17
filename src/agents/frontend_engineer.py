@@ -1,4 +1,9 @@
-"""Frontend Engineer Agent — UI development and web applications."""
+"""Kai — Frontend Engineer Agent.
+
+Kai is creative, fast-moving, and focused on user experience.
+He writes elegant TypeScript/React code with a flair for clean UI patterns.
+Model: openrouter/qwen/qwen3-coder (fast, code-specialized).
+"""
 
 from typing import Any
 
@@ -7,43 +12,64 @@ from src.tools.chat_tools import ChatTools
 from src.tools.coding_tools import CodingTools
 from src.tools.github_tools import GitHubTools
 
-FRONTEND_ENGINEER_PERSONA = """You are a Senior Frontend Engineer at My IT Crew.
+KAI_PERSONA = """You are Kai, a Senior Frontend Engineer at My IT Crew.
 
-Your responsibilities:
-- Pick up tasks labeled 'status/ready' + 'dept/frontend' and IMPLEMENT them
-- Build and maintain web UIs, dashboards, and client-side applications
-- Create feature branches, write code, commit, and open PRs
-- Review PRs touching frontend code
-- Post updates to #engineering Slack channel
+PERSONALITY:
+- Creative and fast-moving — you ship quickly and iterate
+- Passionate about user experience and pixel-perfect UI
+- You write minimal, elegant code — no over-engineering
+- You love modern patterns: hooks, server components, composable utilities
+- You have strong opinions on design systems and consistency
+- You sign your PR descriptions and comments as "— Kai ⚡"
 
-Your development workflow:
-1. Check for issues labeled 'status/ready' + 'dept/frontend'
-2. For each task you pick up:
-   a. Read the issue to understand requirements
-   b. Create a feature branch (e.g. 'feat/issue-42-dashboard-ui')
-   c. Read existing code to understand the codebase structure
-   d. Write your implementation (components, styles, tests)
-   e. Push all files in a single commit
-   f. Open a PR linking the issue (use 'Fixes #N' in the body)
-   g. Post to #engineering that you've opened a PR
-3. Also review open PRs with frontend changes
+YOUR CODING STYLE:
+- TypeScript strict mode — ZERO `any` types
+- Functional components with custom hooks for logic extraction
+- Tailwind utility classes — avoid custom CSS unless absolutely needed
+- React Query / server state over client-side state management
+- Small, focused components (< 50 lines each)
+- Accessibility is non-negotiable (aria labels, keyboard nav)
+- You write tests that test behavior, not implementation details
 
-Tech stack: TypeScript, React, Next.js, Tailwind CSS, Vite, Vitest, Playwright.
+CLAIMING TASKS:
+- When you pick up a task, IMMEDIATELY:
+  1. Add label 'claimed-by/kai' to the issue
+  2. Remove label 'status/ready'
+  3. Add label 'status/in-progress'
+  4. Comment: "⚡ Kai here — picking this up. Will have a PR shortly."
+- NEVER pick up issues already labeled 'claimed-by/nova' or 'claimed-by/zara'
+- You CAN and SHOULD review PRs from Nova and Zara
 
-Coding standards:
-- TypeScript strict mode — no `any` types
-- Component-driven architecture
-- Accessible (WCAG 2.1 AA)
-- Responsive design (mobile-first)
-- Unit tests for logic, integration tests for flows
+DEVELOPMENT WORKFLOW:
+1. Check for tasks labeled 'status/ready' + 'dept/frontend' (without claimed-by/* labels)
+2. Also check 'dept/engineering' for UI-related work
+3. Claim the task (labels + comment)
+4. Create a branch: 'kai/issue-N-short-description'
+5. Read existing code to understand component patterns
+6. Write implementation with tests
+7. Push all files in a single commit
+8. Open a PR with 'Fixes #N' in the body
+9. Post to #engineering: "⚡ Kai opened PR #X for issue #N"
+
+REVIEWING OTHERS' PRs:
+- Focus on UX, accessibility, and component design
+- Call out any `any` types or missing accessibility attributes
+- Suggest simpler patterns when you see over-engineering
+
+Tech stack: TypeScript, React 18+, Next.js App Router, Tailwind CSS, Vitest, Playwright.
 """
 
 
 class FrontendEngineerAgent(BaseAgent):
-    """Frontend Engineer agent that builds UIs and reviews frontend PRs."""
+    """Kai — creative frontend engineer with UX focus."""
 
     def __init__(self):
-        super().__init__(agent_id="frontend-engineer", persona=FRONTEND_ENGINEER_PERSONA)
+        settings_temp = __import__("src.config", fromlist=["Settings"]).Settings()
+        super().__init__(
+            agent_id="kai",
+            persona=KAI_PERSONA,
+            model=settings_temp.model_kai,
+        )
         self._setup_tools()
 
     def _setup_tools(self) -> None:
@@ -67,7 +93,7 @@ class FrontendEngineerAgent(BaseAgent):
         self.register_tool(
             "list_issues",
             gh.list_issues,
-            "List open issues to find frontend tasks",
+            "List open issues. Filter for unclaimed frontend tasks.",
             {
                 "type": "object",
                 "properties": {
@@ -79,7 +105,7 @@ class FrontendEngineerAgent(BaseAgent):
         self.register_tool(
             "comment_on_issue",
             gh.comment_on_issue,
-            "Comment on an issue (claim it or ask questions)",
+            "Comment on an issue (use to claim tasks or give feedback)",
             {
                 "type": "object",
                 "properties": {
@@ -90,18 +116,9 @@ class FrontendEngineerAgent(BaseAgent):
             },
         )
         self.register_tool(
-            "list_pull_requests",
-            gh.list_pull_requests,
-            "List open PRs to review frontend changes",
-            {
-                "type": "object",
-                "properties": {"limit": {"type": "integer"}},
-            },
-        )
-        self.register_tool(
             "update_issue_labels",
             gh.update_issue_labels,
-            "Update issue labels (mark as in-progress when starting work)",
+            "Add/remove labels. Use to claim: add=['claimed-by/kai','status/in-progress'], remove=['status/ready']",
             {
                 "type": "object",
                 "properties": {
@@ -112,11 +129,20 @@ class FrontendEngineerAgent(BaseAgent):
                 "required": ["issue_number"],
             },
         )
+        self.register_tool(
+            "list_pull_requests",
+            gh.list_pull_requests,
+            "List open PRs to review (especially from Nova and Zara)",
+            {
+                "type": "object",
+                "properties": {"limit": {"type": "integer"}},
+            },
+        )
         # Coding tools
         self.register_tool(
             "create_branch",
             code.create_branch,
-            "Create a new git branch for your work",
+            "Create a branch. Use pattern: 'kai/issue-N-description'",
             {
                 "type": "object",
                 "properties": {
@@ -178,7 +204,7 @@ class FrontendEngineerAgent(BaseAgent):
         self.register_tool(
             "create_pull_request",
             code.create_pull_request,
-            "Open a PR. Use 'Fixes #N' in body to link issues.",
+            "Open a PR. Always include 'Fixes #N' and sign as Kai.",
             {
                 "type": "object",
                 "properties": {
@@ -203,18 +229,38 @@ class FrontendEngineerAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
-        # Priority: frontend tasks to implement
-        issues = await gh.list_issues(labels=["dept/frontend", "status/ready"], limit=3)
+        # Frontend tasks that nobody has claimed
+        issues = await gh.list_issues(labels=["dept/frontend", "status/ready"], limit=5)
         for issue in issues:
+            issue_labels = [label for label in issue.get("labels", [])]
+            if any(l.startswith("claimed-by/") for l in issue_labels):
+                continue
             events.append(
                 {
-                    "type": "frontend_task",
+                    "type": "unclaimed_task",
                     "title": issue["title"],
                     "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
                 }
             )
 
-        # Check for PRs needing review
+        # Also check general engineering tasks for UI-related work
+        issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=5)
+        for issue in issues:
+            issue_labels = [label for label in issue.get("labels", [])]
+            if any(l.startswith("claimed-by/") for l in issue_labels):
+                continue
+            # Only interested if it mentions UI/frontend keywords
+            body = (issue.get("body", "") + issue.get("title", "")).lower()
+            if any(kw in body for kw in ["ui", "frontend", "component", "dashboard", "page"]):
+                events.append(
+                    {
+                        "type": "unclaimed_task",
+                        "title": issue["title"],
+                        "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
+                    }
+                )
+
+        # PRs to review (from teammates)
         prs = await gh.list_pull_requests(limit=5)
         for pr in prs:
             events.append(
@@ -229,7 +275,7 @@ class FrontendEngineerAgent(BaseAgent):
 
     async def reflect(self, result: dict[str, Any]) -> None:
         self.log.info(
-            "frontend_engineer_reflection",
+            "kai_reflection",
             actions_taken=len(result.get("actions", [])),
             summary=result.get("summary", "")[:200],
         )
