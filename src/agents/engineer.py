@@ -230,20 +230,31 @@ class EngineerAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
-        # Ready tasks that nobody has claimed yet
-        issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=5)
-        for issue in issues:
-            # Skip if already claimed by another agent
-            issue_labels = [label for label in issue.get("labels", [])]
-            if any(lbl.startswith("claimed-by/") for lbl in issue_labels):
-                continue
+        # PRIORITY 1: Continue work I already claimed (don't abandon in-progress tasks)
+        my_tasks = await gh.list_issues(labels=["claimed-by/nova", "status/in-progress"], limit=3)
+        for issue in my_tasks:
             events.append(
                 {
-                    "type": "unclaimed_task",
+                    "type": "my_in_progress_task",
                     "title": issue["title"],
-                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
+                    "body": f"Issue #{issue['number']} (YOUR task — continue implementing): {issue.get('body', '')[:500]}",
                 }
             )
+
+        # PRIORITY 2: Only look for new tasks if I have nothing in progress
+        if not my_tasks:
+            issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=5)
+            for issue in issues:
+                issue_labels = [label for label in issue.get("labels", [])]
+                if any(lbl.startswith("claimed-by/") for lbl in issue_labels):
+                    continue
+                events.append(
+                    {
+                        "type": "unclaimed_task",
+                        "title": issue["title"],
+                        "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
+                    }
+                )
 
         # PRs to review (from teammates)
         prs = await gh.list_pull_requests(limit=5)

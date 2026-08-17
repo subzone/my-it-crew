@@ -104,7 +104,7 @@ class BaseAgent(ABC):
         self.tools: dict[str, Any] = {}
         self.skills: dict[str, SkillPlugin] = {}
         self._skill_tool_names: dict[str, list[str]] = {}
-        self.max_iterations = 5
+        self.max_iterations = 15
         self.log = logger.bind(agent=agent_id)
         self._status: AgentStatus = AgentStatus.STOPPED
         self._started_at: datetime | None = None
