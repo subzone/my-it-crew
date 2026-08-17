@@ -24,8 +24,8 @@ class Settings(BaseSettings):
 
     # Agent-specific models (diverse LLMs = diverse code quality perspectives)
     model_nova: str = "nemotron-super"
-    model_kai: str = "openrouter/qwen/qwen3-coder"
-    model_zara: str = "sambanova/DeepSeek-R1"
+    model_kai: str = "groq/llama-3.3-70b-versatile"
+    model_zara: str = "llama-3.3-70b"
 
     # GitHub
     github_token: str = ""
