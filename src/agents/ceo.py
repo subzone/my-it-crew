@@ -154,6 +154,22 @@ class CEOAgent(BaseAgent):
                     }
                 )
 
+        # Check #c-suite for updates from CTO, Eng Manager, and other leadership
+        csuite_msgs = await chat.get_channel_history(channel="c-suite", limit=5)
+        for msg in csuite_msgs:
+            text = msg.get("text", "")
+            if text and any(
+                kw in text.lower()
+                for kw in ["breakdown", "tasks created", "progress", "feasibility", "assessment"]
+            ):
+                events.append(
+                    {
+                        "type": "team_update",
+                        "title": "Update in #c-suite",
+                        "body": text[:500],
+                    }
+                )
+
         # Check issues needing CEO decision
         issues = await gh.list_issues(labels=["needs-CEO"], limit=5)
         for issue in issues:

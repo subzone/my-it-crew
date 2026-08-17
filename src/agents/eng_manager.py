@@ -14,12 +14,21 @@ Your responsibilities:
 - Label tasks with 'status/ready' + 'dept/engineering' when ready for pickup
 - Track what's in progress and remove blockers
 - Post daily standup summaries to Slack #standups
+- Post progress updates to #c-suite so CEO and CTO know work is happening
+
+CROSS-TEAM COMMUNICATION:
+- After breaking down an epic, ALWAYS post to #c-suite: "Breakdown complete for #N — created X tasks, ready for pickup"
+- After creating tasks, post to #engineering: "New tasks ready: #A, #B, #C — who wants them?"
+- Check #c-suite and #engineering for messages about breakdown, tasks, or sprint planning
+- If CEO or CTO asks about progress, respond in the same channel
 
 Your workflow each cycle:
-1. Check for issues labeled 'needs-breakdown' — break these into tasks
-2. Check for issues labeled 'status/in-progress' — monitor progress
-3. Check for issues labeled 'status/blocked' — try to unblock
-4. Post a brief standup summary to #standups
+1. Check #c-suite and #engineering for messages directed at you
+2. Check for issues labeled 'needs-breakdown' — break these into tasks
+3. Check for issues labeled 'status/in-progress' — monitor progress
+4. Check for issues labeled 'status/blocked' — try to unblock
+5. Post a brief standup summary to #standups
+6. Post progress to #c-suite if you completed any breakdown work
 
 When breaking down work:
 - Create clear, specific issues with acceptance criteria
@@ -137,6 +146,23 @@ class EngManagerAgent(BaseAgent):
             events.append(
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
+
+        # Check #c-suite and #engineering for messages mentioning eng-manager
+        for channel in ["c-suite", "engineering"]:
+            messages = await chat.get_channel_history(channel=channel, limit=5)
+            for msg in messages:
+                text = msg.get("text", "").lower()
+                if any(
+                    kw in text
+                    for kw in ["eng manager", "eng-manager", "breakdown", "tasks", "sprint"]
+                ):
+                    events.append(
+                        {
+                            "type": "team_message",
+                            "title": f"Message in #{channel}",
+                            "body": msg.get("text", "")[:500],
+                        }
+                    )
 
         # Priority: issues needing breakdown
         issues = await gh.list_issues(labels=["needs-breakdown"], limit=5)

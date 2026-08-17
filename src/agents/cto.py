@@ -170,6 +170,23 @@ class CTOAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
+        # Check #c-suite and #engineering for messages relevant to CTO
+        for channel in ["c-suite", "engineering"]:
+            messages = await chat.get_channel_history(channel=channel, limit=5)
+            for msg in messages:
+                text = msg.get("text", "").lower()
+                if any(
+                    kw in text
+                    for kw in ["cto", "architecture", "feasibility", "technical", "review"]
+                ):
+                    events.append(
+                        {
+                            "type": "team_message",
+                            "title": f"Message in #{channel}",
+                            "body": msg.get("text", "")[:500],
+                        }
+                    )
+
         # Priority: issues needing CTO assessment
         issues = await gh.list_issues(labels=["needs-cto"], limit=5)
         for issue in issues:
