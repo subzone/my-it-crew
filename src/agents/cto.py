@@ -135,23 +135,18 @@ class CTOAgent(BaseAgent):
                 "type": "object",
                 "properties": {
                     "issue_number": {"type": "integer"},
-                    "agent_name": {
-                        "type": "string",
-                        "description": "Which agent: backend-developer, frontend-developer, fullstack-developer, qa-engineer, pr-reviewer, pr-approver, documenter, diagram-architect",
-                        "enum": [
-                            "backend-developer",
-                            "frontend-developer",
-                            "fullstack-developer",
-                            "qa-engineer",
-                            "pr-reviewer",
-                            "pr-approver",
-                            "documenter",
-                            "diagram-architect",
-                        ],
+                    "add": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Labels to add, e.g. ['copilot/backend-developer']. Use the copilot/ prefix.",
                     },
-                    "custom_instructions": {"type": "string", "description": "Additional context"},
+                    "remove": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Labels to remove",
+                    },
                 },
-                "required": ["issue_number"],
+                "required": ["issue_number", "add"],
             },
         )
         self.register_tool(
