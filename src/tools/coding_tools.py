@@ -191,11 +191,15 @@ class CodingTools:
             Dict with path, content (decoded), sha, and size.
             Returns an error dict if the path is a directory.
         """
+        # Normalize path — strip leading slashes
+        path = path.strip("/")
         url = f"{self.base_url}/repos/{self.repo}/contents/{path}"
         params = {"ref": branch}
 
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await _request_with_retry(client, "GET", url, self.headers, params=params)
+            resp = await _request_with_retry(
+                client, "GET", url, self.headers, params=params, follow_redirects=True
+            )
             if resp.status_code == 404:
                 self.log.info("file_not_found", path=path, branch=branch)
                 return {"error": f"File '{path}' not found on branch '{branch}'"}
@@ -420,11 +424,18 @@ class CodingTools:
         Returns:
             Dict with list of entries (name, type, path).
         """
-        url = f"{self.base_url}/repos/{self.repo}/contents/{path}"
+        # Normalize path — strip leading/trailing slashes to avoid API redirects
+        path = path.strip("/")
+        if path:
+            url = f"{self.base_url}/repos/{self.repo}/contents/{path}"
+        else:
+            url = f"{self.base_url}/repos/{self.repo}/contents"
         params = {"ref": branch}
 
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await _request_with_retry(client, "GET", url, self.headers, params=params)
+            resp = await _request_with_retry(
+                client, "GET", url, self.headers, params=params, follow_redirects=True
+            )
             if resp.status_code == 404:
                 self.log.info("directory_not_found", path=path, branch=branch)
                 return {"error": f"Path '{path}' not found on branch '{branch}'"}
