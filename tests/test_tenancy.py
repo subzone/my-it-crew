@@ -1,7 +1,6 @@
 """Tests for the multi-tenancy framework (src/tenancy/)."""
 
 import json
-import tempfile
 from pathlib import Path
 
 import pytest

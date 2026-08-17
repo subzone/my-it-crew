@@ -1,55 +1,85 @@
-"""Fullstack Engineer Agent — End-to-end feature development."""
+"""Zara — Fullstack Engineer Agent.
+
+Zara is pragmatic, fast-shipping, and integration-focused.
+She connects systems end-to-end and cares about the whole user journey.
+Model: sambanova/DeepSeek-R1 (deep reasoning, great for complex integrations).
+"""
 
 from typing import Any
 
 from src.agents.base import BaseAgent
 from src.tools.chat_tools import ChatTools
+from src.tools.coding_tools import CodingTools
 from src.tools.github_tools import GitHubTools
 
-FULLSTACK_ENGINEER_PERSONA = """You are a Senior Fullstack Engineer at My IT Crew.
+ZARA_PERSONA = """You are Zara, a Senior Fullstack Engineer at My IT Crew.
 
-Your responsibilities:
-- Implement end-to-end features spanning backend APIs and frontend UIs
-- Pick up tasks labeled 'status/ready' + 'dept/engineering' that need both backend and frontend work
-- Create and review PRs for full-stack features
-- Build integrations between services (APIs, webhooks, event handlers)
-- Write comprehensive tests (unit + integration + e2e)
-- Post updates to #engineering Slack channel
-- Mention QA Engineer when a feature is ready for testing
+PERSONALITY:
+- Pragmatic and delivery-focused — you ship working features fast
+- You think in systems — how does this connect to everything else?
+- You're the bridge between backend and frontend, API and UI
+- You prefer working solutions over perfect abstractions
+- You write clear, readable code that anyone can maintain
+- You sign your PR descriptions and comments as "— Zara 🚀"
 
-Your workflow each cycle:
-1. Check for tasks labeled 'status/ready' + 'dept/engineering' — pick up full-stack work
-2. Check for open PRs — review for end-to-end correctness
-3. Identify integration gaps between frontend and backend
-4. Post to #engineering about progress
-5. Post standup updates to #standups
+YOUR CODING STYLE:
+- API-first: define the contract, then implement both sides
+- Python backend: clean service layer, Pydantic validation, clear error responses
+- TypeScript frontend: React Query for server state, minimal client state
+- You always think about the happy path AND error states
+- You write integration tests that test the full flow
+- You keep files small and focused — if it's > 100 lines, split it
+
+CLAIMING TASKS:
+- When you pick up a task, IMMEDIATELY:
+  1. Add label 'claimed-by/zara' to the issue
+  2. Remove label 'status/ready'
+  3. Add label 'status/in-progress'
+  4. Comment: "🚀 Zara on it — will ship this end-to-end."
+- NEVER pick up issues already labeled 'claimed-by/nova' or 'claimed-by/kai'
+- You CAN and SHOULD review PRs from Nova and Kai
+
+DEVELOPMENT WORKFLOW:
+1. Check for tasks labeled 'status/ready' + 'dept/engineering' (without claimed-by/* labels)
+2. Claim the task (labels + comment)
+3. Create a branch: 'zara/issue-N-short-description'
+4. Read existing code to understand the full stack
+5. Implement backend first, then frontend, then integration tests
+6. Push all files in a single commit
+7. Open a PR with 'Fixes #N' in the body
+8. Post to #engineering: "🚀 Zara opened PR #X for issue #N — full-stack implementation"
+
+REVIEWING OTHERS' PRs:
+- Focus on integration correctness — does the API contract match the frontend usage?
+- Check error handling end-to-end
+- Verify the feature works as a whole, not just individual pieces
 
 Tech stack:
 - Backend: Python 3.11+, asyncio, Pydantic, FastAPI, PostgreSQL
 - Frontend: TypeScript, React, Next.js, Tailwind CSS
-- Infrastructure: Kubernetes, GitHub Actions, Docker
-- APIs: REST + OpenAPI, GraphQL where appropriate
-- Testing: pytest, Vitest, Playwright
-
-Coding standards:
-- Type safety everywhere (Python type hints + TypeScript strict)
-- API-first design — define contracts before implementation
-- Error handling with proper user-facing messages
-- Structured logging with structlog
-- Tests cover happy path + edge cases + error conditions
-- No hardcoded secrets — use environment variables
+- Integration: REST APIs, webhooks, event handlers
+- Testing: pytest + Vitest + integration tests
 """
 
 
 class FullstackEngineerAgent(BaseAgent):
-    """Fullstack Engineer agent that handles end-to-end feature development."""
+    """Zara — pragmatic fullstack engineer focused on end-to-end delivery."""
 
     def __init__(self):
-        super().__init__(agent_id="fullstack-engineer", persona=FULLSTACK_ENGINEER_PERSONA)
+        settings_temp = __import__("src.config", fromlist=["Settings"]).Settings()
+        super().__init__(
+            agent_id="zara",
+            persona=ZARA_PERSONA,
+            model=settings_temp.model_zara,
+        )
+        # Use Zara's own Mattermost bot token
+        if self.settings.mattermost_token_zara:
+            self.settings.mattermost_token = self.settings.mattermost_token_zara
         self._setup_tools()
 
     def _setup_tools(self) -> None:
         gh = GitHubTools(self.settings)
+        code = CodingTools(self.settings)
         chat = ChatTools(self.settings)
 
         self.register_tool(
@@ -68,7 +98,7 @@ class FullstackEngineerAgent(BaseAgent):
         self.register_tool(
             "list_issues",
             gh.list_issues,
-            "List open issues to find tasks",
+            "List open issues. Filter for unclaimed engineering tasks.",
             {
                 "type": "object",
                 "properties": {
@@ -80,7 +110,7 @@ class FullstackEngineerAgent(BaseAgent):
         self.register_tool(
             "comment_on_issue",
             gh.comment_on_issue,
-            "Comment on an issue or provide review feedback",
+            "Comment on an issue (use to claim tasks or give feedback)",
             {
                 "type": "object",
                 "properties": {
@@ -91,48 +121,120 @@ class FullstackEngineerAgent(BaseAgent):
             },
         )
         self.register_tool(
+            "update_issue_labels",
+            gh.update_issue_labels,
+            "Add/remove labels. Use to claim: add=['claimed-by/zara','status/in-progress'], remove=['status/ready']",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "add": {"type": "array", "items": {"type": "string"}},
+                    "remove": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        self.register_tool(
             "list_pull_requests",
             gh.list_pull_requests,
-            "List open PRs to review",
+            "List open PRs to review (especially from Nova and Kai)",
             {
                 "type": "object",
                 "properties": {"limit": {"type": "integer"}},
             },
         )
+        # Coding tools
         self.register_tool(
-            "create_issue",
-            gh.create_issue,
-            "Create a task, bug report, or sub-task",
+            "create_branch",
+            code.create_branch,
+            "Create a branch. Use pattern: 'zara/issue-N-description'",
+            {
+                "type": "object",
+                "properties": {
+                    "branch_name": {"type": "string"},
+                    "from_branch": {"type": "string"},
+                },
+                "required": ["branch_name"],
+            },
+        )
+        self.register_tool(
+            "get_file",
+            code.get_file,
+            "Read a file from the repo to understand existing code",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "branch": {"type": "string"},
+                },
+                "required": ["path"],
+            },
+        )
+        self.register_tool(
+            "get_directory_tree",
+            code.get_directory_tree,
+            "List files in a directory",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "branch": {"type": "string"},
+                },
+            },
+        )
+        self.register_tool(
+            "create_or_update_file",
+            code.create_or_update_file,
+            "Create or update a single file. For updates provide sha from get_file.",
+            {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "content": {"type": "string"},
+                    "message": {"type": "string"},
+                    "branch": {"type": "string"},
+                    "sha": {"type": "string"},
+                },
+                "required": ["path", "content", "message", "branch"],
+            },
+        )
+        self.register_tool(
+            "push_files",
+            code.push_files,
+            "Push multiple files in a single commit. Best for multi-file features.",
+            {
+                "type": "object",
+                "properties": {
+                    "files": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "path": {"type": "string"},
+                                "content": {"type": "string"},
+                            },
+                            "required": ["path", "content"],
+                        },
+                    },
+                    "message": {"type": "string"},
+                    "branch": {"type": "string"},
+                },
+                "required": ["files", "message", "branch"],
+            },
+        )
+        self.register_tool(
+            "create_pull_request",
+            code.create_pull_request,
+            "Open a PR. Always include 'Fixes #N' and sign as Zara.",
             {
                 "type": "object",
                 "properties": {
                     "title": {"type": "string"},
                     "body": {"type": "string"},
-                    "labels": {"type": "array", "items": {"type": "string"}},
+                    "head": {"type": "string"},
+                    "base": {"type": "string"},
                 },
-                "required": ["title", "body"],
-            },
-        )
-        self.register_tool(
-            "update_issue_labels",
-            gh.update_issue_labels,
-            "Update issue labels (e.g. mark as in-progress, done, blocked)",
-            {
-                "type": "object",
-                "properties": {
-                    "issue_number": {"type": "integer"},
-                    "add": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Labels to add",
-                    },
-                    "remove": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Labels to remove",
-                    },
-                },
-                "required": ["issue_number"],
+                "required": ["title", "body", "head"],
             },
         )
 
@@ -148,18 +250,21 @@ class FullstackEngineerAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
-        # Check for engineering tasks ready for pickup
+        # Engineering tasks that nobody has claimed
         issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=5)
         for issue in issues:
+            issue_labels = [label for label in issue.get("labels", [])]
+            if any(lbl.startswith("claimed-by/") for lbl in issue_labels):
+                continue
             events.append(
                 {
-                    "type": "ready_task",
+                    "type": "unclaimed_task",
                     "title": issue["title"],
                     "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
                 }
             )
 
-        # Check for PRs needing review
+        # PRs to review (from teammates)
         prs = await gh.list_pull_requests(limit=5)
         for pr in prs:
             events.append(
@@ -170,22 +275,11 @@ class FullstackEngineerAgent(BaseAgent):
                 }
             )
 
-        # Check for blocked tasks that might need help
-        blocked = await gh.list_issues(labels=["status/blocked"], limit=3)
-        for issue in blocked:
-            events.append(
-                {
-                    "type": "blocked_task",
-                    "title": issue["title"],
-                    "body": f"Issue #{issue['number']}: {issue.get('body', '')[:300]}",
-                }
-            )
-
         return events
 
     async def reflect(self, result: dict[str, Any]) -> None:
         self.log.info(
-            "fullstack_engineer_reflection",
+            "zara_reflection",
             actions_taken=len(result.get("actions", [])),
             summary=result.get("summary", "")[:200],
         )

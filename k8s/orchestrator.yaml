@@ -45,6 +45,38 @@ spec:
             secretKeyRef:
               name: crew-secrets
               key: slack-bot-token
+        # LLM Provider API Keys
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-api-keys
+              key: OPENROUTER_API_KEY
+        - name: SAMBANOVA_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-api-keys
+              key: SAMBANOVA_API_KEY
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-api-keys
+              key: GROQ_API_KEY
+        # Per-agent Mattermost bot tokens
+        - name: MATTERMOST_TOKEN_NOVA
+          valueFrom:
+            secretKeyRef:
+              name: mattermost-bot-tokens
+              key: MATTERMOST_TOKEN_NOVA
+        - name: MATTERMOST_TOKEN_KAI
+          valueFrom:
+            secretKeyRef:
+              name: mattermost-bot-tokens
+              key: MATTERMOST_TOKEN_KAI
+        - name: MATTERMOST_TOKEN_ZARA
+          valueFrom:
+            secretKeyRef:
+              name: mattermost-bot-tokens
+              key: MATTERMOST_TOKEN_ZARA
         resources:
           requests:
             cpu: 100m
