@@ -50,6 +50,7 @@ class CiganceAgent(BaseAgent):
 
     def __init__(self):
         super().__init__(agent_id="cigance", persona=CIGANCE_PERSONA)
+        self.max_iterations = 15  # Needs more iterations for seeding/testing
         self._setup_tools()
 
     def _setup_tools(self) -> None:
