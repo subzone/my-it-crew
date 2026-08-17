@@ -27,7 +27,7 @@ class CodingTools:
         self.repo = settings.github_repo
         self.base_url = "https://api.github.com"
         self.headers = {
-            "Authorization": f"token {settings.github_token}",
+            "Authorization": f"Bearer {settings.github_token}",
             "Accept": "application/vnd.github.v3+json",
         }
 

@@ -5,7 +5,6 @@ import pytest
 from src.agents.base import AgentStatus, BaseAgent, SkillPlugin
 from src.agents.ceo import CEOAgent
 
-
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
