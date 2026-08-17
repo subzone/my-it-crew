@@ -236,7 +236,7 @@ class FrontendEngineerAgent(BaseAgent):
         issues = await gh.list_issues(labels=["dept/frontend", "status/ready"], limit=5)
         for issue in issues:
             issue_labels = [label for label in issue.get("labels", [])]
-            if any(l.startswith("claimed-by/") for l in issue_labels):
+            if any(lbl.startswith("claimed-by/") for lbl in issue_labels):
                 continue
             events.append(
                 {
@@ -250,7 +250,7 @@ class FrontendEngineerAgent(BaseAgent):
         issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=5)
         for issue in issues:
             issue_labels = [label for label in issue.get("labels", [])]
-            if any(l.startswith("claimed-by/") for l in issue_labels):
+            if any(lbl.startswith("claimed-by/") for lbl in issue_labels):
                 continue
             # Only interested if it mentions UI/frontend keywords
             body = (issue.get("body", "") + issue.get("title", "")).lower()

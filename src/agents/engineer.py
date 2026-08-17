@@ -235,7 +235,7 @@ class EngineerAgent(BaseAgent):
         for issue in issues:
             # Skip if already claimed by another agent
             issue_labels = [label for label in issue.get("labels", [])]
-            if any(l.startswith("claimed-by/") for l in issue_labels):
+            if any(lbl.startswith("claimed-by/") for lbl in issue_labels):
                 continue
             events.append(
                 {
