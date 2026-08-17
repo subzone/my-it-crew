@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     fast_model: str = "nemotron-nano"
 
     # Agent-specific models (diverse LLMs = diverse code quality perspectives)
-    model_nova: str = "nemotron-super"
-    model_kai: str = "groq/llama-3.3-70b-versatile"
+    model_nova: str = "llama-3.3-70b"
+    model_kai: str = "llama-3.3-70b"
     model_zara: str = "llama-3.3-70b"
 
     # GitHub
