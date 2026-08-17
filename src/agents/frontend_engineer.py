@@ -70,6 +70,9 @@ class FrontendEngineerAgent(BaseAgent):
             persona=KAI_PERSONA,
             model=settings_temp.model_kai,
         )
+        # Use Kai's own Mattermost bot token
+        if self.settings.mattermost_token_kai:
+            self.settings.mattermost_token = self.settings.mattermost_token_kai
         self._setup_tools()
 
     def _setup_tools(self) -> None:

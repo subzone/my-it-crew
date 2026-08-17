@@ -68,6 +68,9 @@ class EngineerAgent(BaseAgent):
             persona=NOVA_PERSONA,
             model=settings_temp.model_nova,
         )
+        # Use Nova's own Mattermost bot token
+        if self.settings.mattermost_token_nova:
+            self.settings.mattermost_token = self.settings.mattermost_token_nova
         self._setup_tools()
 
     def _setup_tools(self) -> None:

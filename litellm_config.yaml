@@ -70,6 +70,26 @@ model_list:
       api_key: os.environ/SAMBANOVA_API_KEY
       api_base: https://api.sambanova.ai/v1
 
+  # ─── Groq Models ────────────────────────────────────────────────────
+  # Prefix: groq/ — routes through Groq Cloud (ultra-fast inference)
+  - model_name: groq/llama-3.3-70b-versatile
+    litellm_params:
+      model: groq/llama-3.3-70b-versatile
+      api_key: os.environ/GROQ_API_KEY
+      api_base: https://api.groq.com/openai/v1
+
+  - model_name: groq/deepseek-r1-distill-llama-70b
+    litellm_params:
+      model: groq/deepseek-r1-distill-llama-70b
+      api_key: os.environ/GROQ_API_KEY
+      api_base: https://api.groq.com/openai/v1
+
+  - model_name: groq/qwen-qwq-32b
+    litellm_params:
+      model: groq/qwen-qwq-32b
+      api_key: os.environ/GROQ_API_KEY
+      api_base: https://api.groq.com/openai/v1
+
 litellm_settings:
   # Fallback to a cheaper model if primary fails
   fallbacks:

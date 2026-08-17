@@ -72,6 +72,9 @@ class FullstackEngineerAgent(BaseAgent):
             persona=ZARA_PERSONA,
             model=settings_temp.model_zara,
         )
+        # Use Zara's own Mattermost bot token
+        if self.settings.mattermost_token_zara:
+            self.settings.mattermost_token = self.settings.mattermost_token_zara
         self._setup_tools()
 
     def _setup_tools(self) -> None:
