@@ -1,0 +1,1 @@
+class AgentArchitecture:\n    def __init__(self):\n        pass\n\n    def design(self):\n        # Design the overall architecture for an autonomous agent that handles IT ticket triage\n        pass
