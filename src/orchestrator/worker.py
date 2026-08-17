@@ -13,6 +13,8 @@ from src.agents.cto import CTOAgent
 from src.agents.devops import DevOpsAgent
 from src.agents.eng_manager import EngManagerAgent
 from src.agents.engineer import EngineerAgent
+from src.agents.frontend_engineer import FrontendEngineerAgent
+from src.agents.fullstack_engineer import FullstackEngineerAgent
 from src.agents.marketer import MarketerAgent
 from src.agents.qa_engineer import QAEngineerAgent
 from src.agents.reporter import ReporterAgent
@@ -28,6 +30,8 @@ AGENT_REGISTRY = {
     "cto": CTOAgent,
     "eng-manager": EngManagerAgent,
     "engineer": EngineerAgent,
+    "frontend-engineer": FrontendEngineerAgent,
+    "fullstack-engineer": FullstackEngineerAgent,
     "devops": DevOpsAgent,
     "qa-engineer": QAEngineerAgent,
     "marketer": MarketerAgent,

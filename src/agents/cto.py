@@ -107,7 +107,7 @@ class CTOAgent(BaseAgent):
         self.register_tool(
             "update_issue_labels",
             gh.update_issue_labels,
-            "Add or remove labels from an issue (use to pass work: remove needs-CTO, add needs-breakdown)",
+            "Add or remove labels from an issue (use to pass work: remove needs-cto, add needs-breakdown)",
             {
                 "type": "object",
                 "properties": {
@@ -130,16 +130,18 @@ class CTOAgent(BaseAgent):
         self.register_tool(
             "assign_copilot_agent",
             gh.update_issue_labels,
-            "Assign a Copilot agent by adding a label. ALWAYS assign copilot/architect FIRST for design, then copilot/backend-developer for implementation. Available: copilot/architect, copilot/backend-developer, copilot/qa-engineer, copilot/pr-reviewer, copilot/pr-approver, copilot/documenter, copilot/diagram-architect",
+            "Assign a Copilot agent by adding a label. ALWAYS assign copilot/architect FIRST for design, then copilot/backend-developer for implementation. Available: copilot/architect, copilot/backend-developer, copilot/frontend-developer, copilot/fullstack-developer, copilot/qa-engineer, copilot/pr-reviewer, copilot/pr-approver, copilot/documenter, copilot/diagram-architect",
             {
                 "type": "object",
                 "properties": {
                     "issue_number": {"type": "integer"},
                     "agent_name": {
                         "type": "string",
-                        "description": "Which agent: backend-developer, qa-engineer, pr-reviewer, pr-approver, documenter, diagram-architect",
+                        "description": "Which agent: backend-developer, frontend-developer, fullstack-developer, qa-engineer, pr-reviewer, pr-approver, documenter, diagram-architect",
                         "enum": [
                             "backend-developer",
+                            "frontend-developer",
+                            "fullstack-developer",
                             "qa-engineer",
                             "pr-reviewer",
                             "pr-approver",
@@ -174,7 +176,7 @@ class CTOAgent(BaseAgent):
             )
 
         # Priority: issues needing CTO assessment
-        issues = await gh.list_issues(labels=["needs-CTO"], limit=5)
+        issues = await gh.list_issues(labels=["needs-cto"], limit=5)
         for issue in issues:
             events.append(
                 {
