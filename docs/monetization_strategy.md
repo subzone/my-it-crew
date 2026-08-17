@@ -1,0 +1,1 @@
+Monetization strategy for autonomous AI agents
