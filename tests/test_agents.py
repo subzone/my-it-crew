@@ -9,6 +9,8 @@ from src.agents.cto import CTOAgent
 from src.agents.devops import DevOpsAgent
 from src.agents.eng_manager import EngManagerAgent
 from src.agents.engineer import EngineerAgent
+from src.agents.frontend_engineer import FrontendEngineerAgent
+from src.agents.fullstack_engineer import FullstackEngineerAgent
 from src.agents.marketer import MarketerAgent
 from src.agents.qa_engineer import QAEngineerAgent
 
@@ -41,7 +43,7 @@ class TestAgentInstantiation:
         agent = EngManagerAgent()
         assert agent.agent_id == "eng-manager"
         assert "create_issue" in agent.tools
-        assert "assign_copilot" in agent.tools
+        assert "assign_copilot_agent" in agent.tools
         assert "list_issues" in agent.tools
 
     def test_devops_agent_init(self):
@@ -61,6 +63,23 @@ class TestAgentInstantiation:
         assert agent.agent_id == "marketer"
         assert "post_discussion" in agent.tools
         assert "send_slack_message" in agent.tools
+
+    def test_frontend_engineer_agent_init(self):
+        agent = FrontendEngineerAgent()
+        assert agent.agent_id == "frontend-engineer"
+        assert "list_pull_requests" in agent.tools
+        assert "comment_on_issue" in agent.tools
+        assert "list_issues" in agent.tools
+        assert "create_issue" in agent.tools
+
+    def test_fullstack_engineer_agent_init(self):
+        agent = FullstackEngineerAgent()
+        assert agent.agent_id == "fullstack-engineer"
+        assert "list_pull_requests" in agent.tools
+        assert "comment_on_issue" in agent.tools
+        assert "list_issues" in agent.tools
+        assert "create_issue" in agent.tools
+        assert "update_issue_labels" in agent.tools
 
 
 class TestBaseAgentBehavior:

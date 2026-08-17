@@ -11,6 +11,8 @@ from src.agents.cto import CTOAgent
 from src.agents.devops import DevOpsAgent
 from src.agents.eng_manager import EngManagerAgent
 from src.agents.engineer import EngineerAgent
+from src.agents.frontend_engineer import FrontendEngineerAgent
+from src.agents.fullstack_engineer import FullstackEngineerAgent
 from src.agents.marketer import MarketerAgent
 from src.agents.qa_engineer import QAEngineerAgent
 from src.config import Settings
@@ -29,6 +31,8 @@ class Orchestrator:
             "cto": CTOAgent(),
             "eng-manager": EngManagerAgent(),
             "engineer": EngineerAgent(),
+            "frontend-engineer": FrontendEngineerAgent(),
+            "fullstack-engineer": FullstackEngineerAgent(),
             "devops": DevOpsAgent(),
             "qa-engineer": QAEngineerAgent(),
             "marketer": MarketerAgent(),
@@ -92,6 +96,22 @@ class Orchestrator:
             args=["engineer"],
             id="engineer_cycle",
             name="Engineer Cycle",
+        )
+        self.scheduler.add_job(
+            self.run_agent,
+            "interval",
+            seconds=interval * 2,
+            args=["frontend-engineer"],
+            id="frontend_engineer_cycle",
+            name="Frontend Engineer Cycle",
+        )
+        self.scheduler.add_job(
+            self.run_agent,
+            "interval",
+            seconds=interval * 2,
+            args=["fullstack-engineer"],
+            id="fullstack_engineer_cycle",
+            name="Fullstack Engineer Cycle",
         )
         self.scheduler.add_job(
             self.run_agent,

@@ -97,7 +97,7 @@ class EngManagerAgent(BaseAgent):
         self.register_tool(
             "assign_copilot_agent",
             gh.update_issue_labels,
-            "Assign a Copilot agent to implement an issue. Adds a label that triggers auto-assignment. Available agents: copilot/backend-developer, copilot/qa-engineer, copilot/documenter, copilot/diagram-architect",
+            "Assign a Copilot agent to implement an issue. Adds a label that triggers auto-assignment. Available agents: copilot/backend-developer, copilot/frontend-developer, copilot/fullstack-developer, copilot/qa-engineer, copilot/documenter, copilot/diagram-architect",
             {
                 "type": "object",
                 "properties": {
