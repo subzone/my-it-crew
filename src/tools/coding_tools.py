@@ -70,7 +70,9 @@ async def _request_with_retry(
 
             # Rate limited — respect Retry-After header
             if resp.status_code == 429:
-                retry_after = int(resp.headers.get("Retry-After", RETRY_BACKOFF_BASE * (2**attempt)))
+                retry_after = int(
+                    resp.headers.get("Retry-After", RETRY_BACKOFF_BASE * (2**attempt))
+                )
                 logger.warning(
                     "rate_limited",
                     url=url,
@@ -173,7 +175,9 @@ class CodingTools:
                 return {"error": f"Branch '{branch_name}' conflict — could not resolve"}
 
             resp.raise_for_status()
-            self.log.info("branch_created", branch=branch_name, from_branch=from_branch, sha=sha[:8])
+            self.log.info(
+                "branch_created", branch=branch_name, from_branch=from_branch, sha=sha[:8]
+            )
             return {"branch": branch_name, "sha": sha, "status": "created"}
 
     async def get_file(self, path: str, branch: str = "main") -> dict[str, Any]:
