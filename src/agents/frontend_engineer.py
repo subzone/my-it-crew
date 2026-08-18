@@ -220,6 +220,25 @@ class FrontendEngineerAgent(BaseAgent):
             },
         )
 
+    async def _enrich_context(self, gh: GitHubTools, body: str) -> str:
+        """Propagate parent epic architectural context to Kai."""
+        import re
+
+        match = re.search(r"(?:Parent Epic|Epic|parent):\s*#?(\d+)", body, re.IGNORECASE)
+        if not match:
+            return body[:500]
+        try:
+            parent_num = int(match.group(1))
+            parent = await gh.get_issue(parent_num)
+            if parent and "title" in parent:
+                return (
+                    f"{body[:400]}\n\n[Architecture Note from Parent Epic #{parent_num}: "
+                    f"'{parent.get('title')}']"
+                )
+        except Exception:
+            pass
+        return body[:500]
+
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
         events = []
@@ -235,11 +254,12 @@ class FrontendEngineerAgent(BaseAgent):
         # PRIORITY 1: Continue work I already claimed
         my_tasks = await gh.list_issues(labels=["claimed-by/kai", "status/in-progress"], limit=3)
         for issue in my_tasks:
+            enriched_body = await self._enrich_context(gh, issue.get("body", ""))
             events.append(
                 {
                     "type": "my_in_progress_task",
                     "title": issue["title"],
-                    "body": f"Issue #{issue['number']} (YOUR task — continue implementing): {issue.get('body', '')[:500]}",
+                    "body": f"Issue #{issue['number']} (YOUR task — continue implementing): {enriched_body}",
                 }
             )
 
@@ -251,11 +271,12 @@ class FrontendEngineerAgent(BaseAgent):
                 issue_labels = [label for label in issue.get("labels", [])]
                 if any(lbl.startswith("claimed-by/") for lbl in issue_labels):
                     continue
+                enriched_body = await self._enrich_context(gh, issue.get("body", ""))
                 events.append(
                     {
                         "type": "unclaimed_task",
                         "title": issue["title"],
-                        "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
+                        "body": f"Issue #{issue['number']}: {enriched_body}",
                     }
                 )
 
@@ -267,11 +288,12 @@ class FrontendEngineerAgent(BaseAgent):
                     continue
                 body = (issue.get("body", "") + issue.get("title", "")).lower()
                 if any(kw in body for kw in ["ui", "frontend", "component", "dashboard", "page"]):
+                    enriched_body = await self._enrich_context(gh, issue.get("body", ""))
                     events.append(
                         {
                             "type": "unclaimed_task",
                             "title": issue["title"],
-                            "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
+                            "body": f"Issue #{issue['number']}: {enriched_body}",
                         }
                     )
 

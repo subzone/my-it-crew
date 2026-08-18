@@ -172,6 +172,29 @@ class CiganceAgent(BaseAgent):
             "Export dynamic LiteLLM router configuration containing working free models and fallback cascades",
             {"type": "object", "properties": {}},
         )
+        self.register_tool(
+            "sync_model_to_litellm_proxy",
+            scraper.sync_model_to_litellm_proxy,
+            "Dynamically register a newly verified free model into the live running LiteLLM proxy router",
+            {
+                "type": "object",
+                "properties": {
+                    "model_name": {
+                        "type": "string",
+                        "description": "Target model identifier in LiteLLM (e.g. groq/llama-3.3-70b)",
+                    },
+                    "litellm_model": {
+                        "type": "string",
+                        "description": "Upstream provider model (e.g. groq/llama-3.3-70b-versatile)",
+                    },
+                    "api_base": {"type": "string", "description": "Upstream API base URL"},
+                    "api_key": {"type": "string", "description": "Upstream API key"},
+                    "litellm_api_base": {"type": "string", "description": "LiteLLM proxy endpoint"},
+                    "litellm_master_key": {"type": "string", "description": "LiteLLM master key"},
+                },
+                "required": ["model_name", "litellm_model", "api_base"],
+            },
+        )
 
         # Scraper tools
         self.register_tool(

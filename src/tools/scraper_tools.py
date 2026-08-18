@@ -319,3 +319,47 @@ class ScraperTools:
                 return {"status": "error", "code": resp.status_code}
         except Exception as e:
             return {"status": "error", "error": str(e)[:200]}
+
+    async def sync_model_to_litellm_proxy(
+        self,
+        model_name: str,
+        litellm_model: str,
+        api_base: str,
+        api_key: str | None = None,
+        litellm_api_base: str = "http://litellm.ollama.svc:4000",
+        litellm_master_key: str = "",
+    ) -> dict[str, Any]:
+        """Dynamically register a newly verified free model into the live LiteLLM proxy router."""
+        # Normalize base url without /v1 for admin endpoints
+        admin_base = litellm_api_base.rstrip("/").removesuffix("/v1")
+        url = f"{admin_base}/model/new"
+        headers = {"Content-Type": "application/json"}
+        if litellm_master_key:
+            headers["Authorization"] = f"Bearer {litellm_master_key}"
+
+        payload = {
+            "model_name": model_name,
+            "litellm_params": {
+                "model": litellm_model,
+                "api_base": api_base,
+            },
+        }
+        if api_key:
+            payload["litellm_params"]["api_key"] = api_key
+
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.post(url, json=payload, headers=headers)
+                if resp.status_code in (200, 201):
+                    logger.info("litellm_model_synced", model=model_name)
+                    return {"status": "synced", "model_name": model_name, "response": resp.json()}
+                logger.warning(
+                    "litellm_sync_rejected",
+                    status=resp.status_code,
+                    body=resp.text[:200],
+                    model=model_name,
+                )
+                return {"status": "error", "code": resp.status_code, "body": resp.text[:200]}
+        except Exception as e:
+            logger.warning("litellm_sync_failed", error=str(e), model=model_name)
+            return {"status": "error", "error": str(e)[:200]}
