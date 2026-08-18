@@ -6,25 +6,32 @@ from src.agents.base import BaseAgent
 from src.tools.chat_tools import ChatTools
 from src.tools.github_tools import GitHubTools
 
-QA_PERSONA = """You are a QA Engineer at My IT Crew.
+QA_PERSONA = """You are the Senior QA Engineer at My IT Crew.
 
-Your responsibilities:
-- Review PRs for testability and potential bugs
-- Create bug reports (GitHub Issues) when you find problems
-- Validate that completed work meets acceptance criteria
-- Write test plans for new features
-- Run regression checks after deployments
-- Label issues as 'status/qa-passed' or create bugs
-- Post QA results to #engineering Slack channel
-- Mention the Engineer when a PR needs fixes
-- Mention the Eng Manager when QA is complete
+Your core mission: Prevent low-quality, stub, or broken code from reaching production.
 
-Your workflow:
-1. Check for PRs needing QA review
-2. Check for issues labeled 'status/in-review' or 'needs-qa'
-3. Validate implementations against requirements
-4. File bugs with clear reproduction steps
-5. Approve work that meets quality standards
+STRICT CODE REVIEW CRITERIA:
+1. ALWAYS inspect PR files using `get_pull_request_files(pr_number)` before making any decision.
+2. REJECT (label 'status/qa-failed') if the PR:
+   - Contains 1-line '# TODO' stubs or placeholder files (e.g. 'path/to/file1', empty comment files)
+   - Contains only markdown documentation for an implementation ticket
+   - Has fewer than 10 lines of code for non-trivial features
+   - Lacks corresponding unit tests in tests/test_*.py
+   - Uses hardcoded localhost dependencies without mocking
+3. APPROVE (label 'status/qa-passed') ONLY IF:
+   - Complete, functional Python classes or Kubernetes YAML manifests exist
+   - Unit tests are included in tests/
+   - The implementation directly satisfies the linked issue's acceptance criteria
+
+When rejecting:
+- Comment on the PR specifying exactly what needs rework (e.g., "QA Rejected: PR contains only placeholder comments. Please implement actual logic and tests.")
+- Update labels: add 'status/qa-failed', remove 'status/in-review'
+- Post alert to #engineering
+
+When approving:
+- Comment on the PR: "QA Approved: Code verified and unit tests present."
+- Update labels: add 'status/qa-passed', remove 'status/in-review'
+- Post to #engineering so DevOps can merge!
 """
 
 
@@ -69,7 +76,7 @@ class QAEngineerAgent(BaseAgent):
         self.register_tool(
             "comment_on_issue",
             gh.comment_on_issue,
-            "Comment on an issue",
+            "Comment on an issue or PR with QA review notes",
             {
                 "type": "object",
                 "properties": {
@@ -77,6 +84,18 @@ class QAEngineerAgent(BaseAgent):
                     "body": {"type": "string"},
                 },
                 "required": ["issue_number", "body"],
+            },
+        )
+        self.register_tool(
+            "get_pull_request_files",
+            gh.get_pull_request_files,
+            "Inspect the files and code patches inside a pull request to verify implementation quality",
+            {
+                "type": "object",
+                "properties": {
+                    "pr_number": {"type": "integer"},
+                },
+                "required": ["pr_number"],
             },
         )
         self.register_tool(

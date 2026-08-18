@@ -167,6 +167,25 @@ class GitHubTools:
                 for pr in prs
             ]
 
+    async def get_pull_request_files(self, pr_number: int) -> list[dict[str, Any]]:
+        """Get the list of files modified in a pull request including code patches."""
+        url = f"{self.base_url}/repos/{self.repo}/pulls/{pr_number}/files"
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=self.headers)
+            resp.raise_for_status()
+            files = resp.json()
+            return [
+                {
+                    "filename": f["filename"],
+                    "status": f["status"],
+                    "additions": f["additions"],
+                    "deletions": f["deletions"],
+                    "changes": f["changes"],
+                    "patch": f.get("patch", "")[:1200],
+                }
+                for f in files
+            ]
+
     async def merge_pull_request(
         self,
         pr_number: int,
