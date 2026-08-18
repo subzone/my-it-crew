@@ -76,11 +76,11 @@ class GitHubTools:
             }
 
     async def list_issues(
-        self, labels: list[str] | None = None, limit: int = 10
+        self, labels: list[str] | None = None, state: str = "open", limit: int = 10
     ) -> list[dict[str, Any]]:
-        """List open issues with optional label filter."""
+        """List issues with optional label and state filter."""
         url = f"{self.base_url}/repos/{self.repo}/issues"
-        params: dict[str, Any] = {"state": "open", "per_page": limit}
+        params: dict[str, Any] = {"state": state, "per_page": limit}
         if labels:
             params["labels"] = ",".join(labels)
 
@@ -93,12 +93,43 @@ class GitHubTools:
                     "number": i["number"],
                     "title": i["title"],
                     "body": i.get("body", ""),
+                    "state": i.get("state", "open"),
                     "labels": [label["name"] for label in i.get("labels", [])],
                     "assignee": (i.get("assignee", {}).get("login") if i.get("assignee") else None),
+                    "closed_at": i.get("closed_at"),
+                    "updated_at": i.get("updated_at"),
                 }
                 for i in issues
                 if "pull_request" not in i  # Exclude PRs
             ]
+
+    async def list_closed_issues(self, limit: int = 10) -> list[dict[str, Any]]:
+        """List recently closed issues."""
+        return await self.list_issues(state="closed", limit=limit)
+
+    async def get_daily_activity_summary(self) -> dict[str, Any]:
+        """Aggregate 24-hour activity across PRs, in-progress tasks, and blockers."""
+        open_prs = await self.list_pull_requests(limit=10)
+        in_progress = await self.list_issues(labels=["status/in-progress"], limit=10)
+        blocked = await self.list_issues(labels=["status/blocked"], limit=10)
+        ready = await self.list_issues(labels=["status/ready"], limit=10)
+        closed = await self.list_closed_issues(limit=10)
+
+        return {
+            "closed_issues_recent": [
+                {"number": i["number"], "title": i["title"]} for i in closed[:5]
+            ],
+            "open_prs_in_review": [
+                {"number": p["number"], "title": p["title"], "author": p["author"]}
+                for p in open_prs
+            ],
+            "tasks_in_progress": [
+                {"number": i["number"], "title": i["title"], "labels": i["labels"]}
+                for i in in_progress
+            ],
+            "tasks_blocked": [{"number": i["number"], "title": i["title"]} for i in blocked],
+            "tasks_ready_next": [{"number": i["number"], "title": i["title"]} for i in ready[:5]],
+        }
 
     async def create_pull_request(
         self, title: str, body: str, head: str, base: str = "main"

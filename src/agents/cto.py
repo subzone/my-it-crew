@@ -150,6 +150,15 @@ class CTOAgent(BaseAgent):
             },
         )
         self.register_tool(
+            "get_daily_activity_summary",
+            gh.get_daily_activity_summary,
+            "Fetch an aggregated 24-hour summary of closed tasks, active PRs, in-progress tasks, and blockers for technical leadership reporting",
+            {
+                "type": "object",
+                "properties": {},
+            },
+        )
+        self.register_tool(
             "list_pull_requests",
             gh.list_pull_requests,
             "List open pull requests for review",
@@ -170,14 +179,24 @@ class CTOAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
-        # Check #c-suite and #engineering for messages relevant to CTO
-        for channel in ["c-suite", "engineering"]:
+        # Check #c-suite, #engineering, #general for messages relevant to CTO
+        for channel in ["c-suite", "engineering", "general"]:
             messages = await chat.get_channel_history(channel=channel, limit=5)
             for msg in messages:
                 text = msg.get("text", "").lower()
                 if any(
                     kw in text
-                    for kw in ["cto", "architecture", "feasibility", "technical", "review"]
+                    for kw in [
+                        "cto",
+                        "architecture",
+                        "feasibility",
+                        "technical",
+                        "review",
+                        "status",
+                        "summary",
+                        "report",
+                        "progress",
+                    ]
                 ):
                     events.append(
                         {

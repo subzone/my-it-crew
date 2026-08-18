@@ -151,6 +151,15 @@ class EngManagerAgent(BaseAgent):
             },
         )
         self.register_tool(
+            "get_daily_activity_summary",
+            gh.get_daily_activity_summary,
+            "Fetch an aggregated 24-hour summary of closed tasks, active PRs, in-progress tasks, and blockers for daily standup reporting",
+            {
+                "type": "object",
+                "properties": {},
+            },
+        )
+        self.register_tool(
             "list_issues",
             gh.list_issues,
             "List issues",
@@ -174,14 +183,26 @@ class EngManagerAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
-        # Check #c-suite and #engineering for messages mentioning eng-manager
-        for channel in ["c-suite", "engineering"]:
+        # Check #c-suite, #engineering, #standups, #general for messages mentioning eng-manager or requesting standups/status
+        for channel in ["c-suite", "engineering", "standups", "general"]:
             messages = await chat.get_channel_history(channel=channel, limit=5)
             for msg in messages:
                 text = msg.get("text", "").lower()
                 if any(
                     kw in text
-                    for kw in ["eng manager", "eng-manager", "breakdown", "tasks", "sprint"]
+                    for kw in [
+                        "eng manager",
+                        "eng-manager",
+                        "breakdown",
+                        "tasks",
+                        "sprint",
+                        "standup",
+                        "status",
+                        "progress",
+                        "report",
+                        "daily",
+                        "summary",
+                    ]
                 ):
                     events.append(
                         {
