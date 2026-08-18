@@ -98,22 +98,10 @@ model_list:
       api_key: os.environ/CEREBRAS_API_KEY
       api_base: https://api.cerebras.ai/v1
 
-  # ─── Google AI Studio Models ─────────────────────────────────────────
-  # Generous free tier: 15 RPM, 1M TPM, 1,500 RPD
-  - model_name: google/gemini-2.0-flash
-    litellm_params:
-      model: gemini/gemini-2.0-flash
-      api_key: os.environ/GEMINI_API_KEY
-
-  - model_name: google/gemini-2.5-flash
-    litellm_params:
-      model: gemini/gemini-2.5-flash
-      api_key: os.environ/GEMINI_API_KEY
-
 litellm_settings:
   # Multi-provider free tier fallback cascades
   fallbacks:
-    - groq/llama-3.3-70b-versatile: [cerebras/llama-3.3-70b, sambanova/Meta-Llama-3.3-70B-Instruct, google/gemini-2.0-flash, nemotron-super]
+    - groq/llama-3.3-70b-versatile: [cerebras/llama-3.3-70b, sambanova/Meta-Llama-3.3-70B-Instruct, nemotron-super]
     - sambanova/DeepSeek-R1: [groq/deepseek-r1-distill-llama-70b, openrouter/deepseek/deepseek-r1, nemotron-ultra]
     - openrouter/qwen/qwen3-coder: [groq/llama-3.3-70b-versatile, nemotron-super]
     - nemotron-super: [nemotron-nano]
@@ -132,3 +120,4 @@ litellm_settings:
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   database_url: os.environ/LITELLM_DATABASE_URL
+
