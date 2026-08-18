@@ -1,8 +1,9 @@
 import redis
 from typing import Optional
 
+
 class CacheService:
-    def __init__(self, host: str = 'localhost', port: int = 6379, db: int = 0):
+    def __init__(self, host: str = "localhost", port: int = 6379, db: int = 0):
         self.redis_client = redis.Redis(host=host, port=port, db=db)
         self.redis_client.ping()
 
