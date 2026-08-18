@@ -328,3 +328,36 @@ class TestCreatePullRequest:
             )
             assert "error" in result
             assert "already exists" in result["error"]
+
+
+class TestValidateFileContent:
+    def test_valid_python_file(self):
+        from src.tools.coding_tools import validate_file_content
+
+        res = validate_file_content(
+            "src/services/auth.py", "def authenticate():\n    return True\n"
+        )
+        assert res is None
+
+    def test_syntax_error_rejected(self):
+        from src.tools.coding_tools import validate_file_content
+
+        res = validate_file_content("src/broken.py", "def broken():\n    return (\n")
+        assert res is not None
+        assert "SyntaxError" in res
+
+    def test_placeholder_path_rejected(self):
+        from src.tools.coding_tools import validate_file_content
+
+        res = validate_file_content("path/to/file1", "valid content")
+        assert res is not None
+        assert "Generic placeholder paths are not allowed" in res
+
+    def test_comment_only_stub_rejected(self):
+        from src.tools.coding_tools import validate_file_content
+
+        res = validate_file_content(
+            "src/stub.py", "# TODO: implement this later\n# another comment\n"
+        )
+        assert res is not None
+        assert "Zero-Stub Policy" in res

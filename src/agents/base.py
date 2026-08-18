@@ -292,8 +292,19 @@ class BaseAgent(ABC):
 
     async def _reasoning_loop(self, events: list[dict]) -> dict[str, Any]:
         """Core reasoning loop with tool use, exception isolation, and context safety."""
+        grounded_system_prompt = f"""{self.persona}
+
+REPOSITORY ARCHITECTURE & GROUNDING:
+- Main Repo: subzone/my-it-crew
+- Settings: src/config.py (Pydantic SettingsConfigDict)
+- Agents: src/agents/base.py, src/agents/*.py
+- Tools: src/tools/github_tools.py, src/tools/coding_tools.py, src/tools/chat_tools.py
+- Unit Tests: tests/test_*.py (pytest, always mock network/DB)
+- Kubernetes Manifests: k8s/base/*.yaml
+- Zero-Stub Policy: Never create 1-line # TODO stubs or placeholder paths (path/to/file). All code must be complete and pass syntax checks."""
+
         messages: list[dict[str, Any]] = [
-            {"role": "system", "content": self.persona},
+            {"role": "system", "content": grounded_system_prompt},
             {
                 "role": "user",
                 "content": self._format_events(events),
@@ -313,6 +324,7 @@ class BaseAgent(ABC):
                     model=self.model,
                     messages=messages,
                     tools=tool_definitions,
+                    temperature=0.1,
                     tool_choice="auto" if tool_definitions else None,
                 )
             except Exception as e:

@@ -13,6 +13,7 @@ GitHub Token Scope Requirements:
     Do NOT use classic tokens with broad `repo` scope in production.
 """
 
+import ast
 import asyncio
 import base64
 from typing import Any
@@ -28,6 +29,53 @@ logger = structlog.get_logger()
 MAX_RETRIES = 3
 RETRY_BACKOFF_BASE = 1.0  # seconds — doubles each retry (1s, 2s, 4s)
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def validate_file_content(path: str, content: str) -> str | None:
+    """Pre-flight code validator to block hallucinations, placeholder paths, and syntax errors."""
+    lower_path = path.lower().strip("/")
+
+    # 1. Block generic placeholder and template paths
+    if any(
+        dummy in lower_path
+        for dummy in [
+            "path/to/",
+            "path/to/file",
+            "example/file",
+            "dummy",
+            "file1",
+            "file2",
+            "sample/file",
+        ]
+    ):
+        return (
+            f"Rejected path '{path}': Generic placeholder paths are not allowed. "
+            f"Ground file paths in real project directories (e.g. src/, tests/, k8s/)."
+        )
+
+    # 2. Block 1-line stubs or empty files
+    stripped_lines = [
+        line.strip()
+        for line in content.splitlines()
+        if line.strip() and not line.strip().startswith(("#", "//", "/*", "*", "<!--"))
+    ]
+    if not stripped_lines:
+        return (
+            f"Rejected file '{path}': File contains only comments or whitespace. "
+            f"Complete, functional implementation is required (Zero-Stub Policy)."
+        )
+
+    # 3. Python Syntax Verification (AST parse)
+    if path.endswith(".py"):
+        try:
+            ast.parse(content, filename=path)
+        except SyntaxError as e:
+            return (
+                f"SyntaxError in '{path}' at line {e.lineno}, col {e.offset}: {e.msg}. "
+                f"Please fix the Python syntax error before committing."
+            )
+
+    return None
 
 
 async def _request_with_retry(
@@ -251,6 +299,11 @@ class CodingTools:
         Returns:
             Dict with path, commit SHA, and status.
         """
+        val_err = validate_file_content(path, content)
+        if val_err:
+            self.log.warning("preflight_validation_failed", path=path, error=val_err)
+            return {"error": f"Pre-flight validation failed: {val_err}"}
+
         url = f"{self.base_url}/repos/{self.repo}/contents/{path}"
         encoded = base64.b64encode(content.encode("utf-8")).decode("utf-8")
 
@@ -305,6 +358,15 @@ class CodingTools:
             Dict with commit SHA, file count, and status.
         """
         self.log.info("push_files_starting", branch=branch, file_count=len(files))
+
+        # Pre-flight validate all files before doing any network calls
+        for f in files:
+            p = f.get("path", "")
+            c = f.get("content", "")
+            val_err = validate_file_content(p, c)
+            if val_err:
+                self.log.warning("preflight_validation_failed", path=p, error=val_err)
+                return {"error": f"Pre-flight validation failed: {val_err}"}
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             # 1. Get the current commit SHA for the branch
@@ -388,7 +450,7 @@ class CodingTools:
     async def create_pull_request(
         self, title: str, body: str, head: str, base: str = "main"
     ) -> dict[str, Any]:
-        """Create a pull request.
+        """Create a pull request with anti-placeholder validation.
 
         Args:
             title: PR title.
@@ -399,6 +461,18 @@ class CodingTools:
         Returns:
             Dict with PR number and URL.
         """
+        lower_title = title.lower().strip()
+        if lower_title in ["pr title", "title", "my pr", "pull request", "pr"]:
+            return {
+                "error": "Rejected PR title: Generic placeholder titles ('PR title') are not allowed. "
+                "Provide a descriptive title summarizing the actual implementation."
+            }
+        if not body.strip():
+            return {
+                "error": "Rejected PR body: PR description cannot be empty. "
+                "Provide a clear summary of changes referencing 'Fixes #N'."
+            }
+
         url = f"{self.base_url}/repos/{self.repo}/pulls"
         payload = {"title": title, "body": body, "head": head, "base": base}
 
