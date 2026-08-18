@@ -213,6 +213,17 @@ class EngManagerAgent(BaseAgent):
                 }
             )
 
+        # Check for blocked tasks that may now be unblocked
+        blocked_tasks = await gh.list_issues(labels=["status/blocked"], limit=5)
+        for task in blocked_tasks:
+            events.append(
+                {
+                    "type": "blocked_task_review",
+                    "title": f"Review Blocked Task #{task['number']}: {task['title']}",
+                    "body": f"Task #{task['number']} is marked 'status/blocked'. Check if its prerequisite tasks are closed. If prerequisites are done, update labels to remove 'status/blocked' and add 'status/ready'.",
+                }
+            )
+
         # Track in-progress work
         in_progress = await gh.list_issues(labels=["status/in-progress"], limit=10)
         task_items = [i for i in in_progress if "epic" not in i.get("labels", [])]

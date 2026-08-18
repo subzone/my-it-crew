@@ -257,6 +257,56 @@ class FullstackEngineerAgent(BaseAgent):
             pass
         return body[:500]
 
+    def _extract_priority_tag(self, issue: dict) -> str:
+        """Extract formatted priority tag from issue labels."""
+        for label in issue.get("labels", []):
+            if label.lower().startswith("priority/"):
+                return label.upper()
+        return "PRIORITY/P2"
+
+    async def _sort_and_filter_tasks(self, gh: GitHubTools, issues: list[dict]) -> list[dict]:
+        """Filter out claimed/blocked tasks and sort strictly by priority (P0 > P1 > P2)."""
+        import re
+
+        priority_weights = {
+            "priority/p0": 0,
+            "priority/critical": 0,
+            "priority/p1": 1,
+            "priority/high": 1,
+            "priority/p2": 2,
+            "priority/medium": 2,
+            "priority/p3": 3,
+            "priority/low": 3,
+        }
+
+        eligible = []
+        for issue in issues:
+            labels = issue.get("labels", [])
+            if any(lbl.startswith("claimed-by/") for lbl in labels):
+                continue
+            if "status/blocked" in labels:
+                continue
+
+            body = issue.get("body", "")
+            match = re.search(
+                r"(?:depends on|blocked by|prerequisite):\s*#?(\d+)", body, re.IGNORECASE
+            )
+            if match:
+                dep_num = int(match.group(1))
+                try:
+                    dep_issue = await gh.get_issue(dep_num)
+                    if dep_issue and dep_issue.get("state") == "open":
+                        continue
+                except Exception:
+                    pass
+
+            weights = [priority_weights.get(lbl.lower(), 10) for lbl in labels]
+            rank = min(weights) if weights else 10
+            eligible.append((rank, issue))
+
+        eligible.sort(key=lambda x: x[0])
+        return [item[1] for item in eligible]
+
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
         events = []
@@ -300,16 +350,14 @@ class FullstackEngineerAgent(BaseAgent):
 
         # PRIORITY 2: Only look for new tasks if I have NO tasks in progress and NO open PRs in flight (WIP limit = 1)
         if not my_tasks and not my_open_prs:
-            issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=5)
-            for issue in issues:
-                issue_labels = [label for label in issue.get("labels", [])]
-                if any(lbl.startswith("claimed-by/") for lbl in issue_labels):
-                    continue
+            raw_issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=15)
+            sorted_issues = await self._sort_and_filter_tasks(gh, raw_issues)
+            for issue in sorted_issues[:3]:
                 enriched_body = await self._enrich_context(gh, issue.get("body", ""))
                 events.append(
                     {
                         "type": "unclaimed_task",
-                        "title": issue["title"],
+                        "title": f"[{self._extract_priority_tag(issue)}] {issue['title']}",
                         "body": f"Issue #{issue['number']}: {enriched_body}",
                     }
                 )
