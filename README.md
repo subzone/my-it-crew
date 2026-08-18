@@ -26,9 +26,9 @@ python -m src.orchestrator.main
 
 | Agent | Role | Status |
 |-------|------|--------|
-| CEO | Strategic direction, opportunity detection | 🟡 Phase 1 |
-| CTO | Technical vision, architecture decisions | 🟡 Phase 1 |
-| Engineer | Implementation, PRs, code reviews | 🟡 Phase 1 |
+| CEO | Strategic direction, opportunity detection | 📱 Phase 1 |
+| CTO | Technical vision, architecture decisions | 📱 Phase 1 |
+| Engineer | Implementation, PRs, code reviews | 📱 Phase 1 |
 
 ## Communication
 
