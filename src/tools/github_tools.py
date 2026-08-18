@@ -184,6 +184,19 @@ class GitHubTools:
                 for c in comments
             ]
 
+    async def delete_branch(self, branch_name: str) -> dict[str, Any]:
+        """Delete a git branch after PR merge."""
+        clean_branch = branch_name.removeprefix("refs/heads/")
+        if clean_branch in ("main", "master", "develop"):
+            return {"error": "Cannot delete protected default branch"}
+        url = f"{self.base_url}/repos/{self.repo}/git/refs/heads/{clean_branch}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.delete(url, headers=self.headers)
+            if resp.status_code in (204, 200, 404):
+                logger.info("branch_deleted", branch=clean_branch)
+                return {"status": "deleted", "branch": clean_branch}
+            return {"status": "error", "code": resp.status_code}
+
     async def create_discussion(
         self, title: str, body: str, category: str = "General"
     ) -> dict[str, Any]:

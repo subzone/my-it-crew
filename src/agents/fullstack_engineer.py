@@ -276,6 +276,15 @@ class FullstackEngineerAgent(BaseAgent):
             for pr in prs
             if "zara" in pr.get("author", "").lower() or pr.get("head", "").startswith("zara/")
         ]
+        for pr in my_open_prs:
+            if "status/qa-failed" in pr.get("labels", []):
+                events.append(
+                    {
+                        "type": "my_pr_failed_qa",
+                        "title": f"Fix QA Issues on PR #{pr['number']}",
+                        "body": f"QA reported issues on your PR #{pr['number']} ('{pr['title']}'). Please inspect comments, fix the implementation on branch '{pr.get('head')}', and push fixes!",
+                    }
+                )
 
         # PRIORITY 1: Continue work I already claimed
         my_tasks = await gh.list_issues(labels=["claimed-by/zara", "status/in-progress"], limit=3)

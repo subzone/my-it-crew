@@ -263,6 +263,15 @@ class EngineerAgent(BaseAgent):
             for pr in prs
             if "nova" in pr.get("author", "").lower() or pr.get("head", "").startswith("nova/")
         ]
+        for pr in my_open_prs:
+            if "status/qa-failed" in pr.get("labels", []):
+                events.append(
+                    {
+                        "type": "my_pr_failed_qa",
+                        "title": f"Fix QA Issues on PR #{pr['number']}",
+                        "body": f"QA reported issues on your PR #{pr['number']} ('{pr['title']}'). Please inspect comments, fix the implementation on branch '{pr.get('head')}', and push fixes!",
+                    }
+                )
 
         # PRIORITY 1: Continue work I already claimed (don't abandon in-progress tasks)
         my_tasks = await gh.list_issues(labels=["claimed-by/nova", "status/in-progress"], limit=3)

@@ -202,14 +202,26 @@ class EngManagerAgent(BaseAgent):
                 }
             )
 
+        # Track active epics and check if all child tasks are completed
+        epics = await gh.list_issues(labels=["epic", "status/in-progress"], limit=5)
+        for epic in epics:
+            events.append(
+                {
+                    "type": "active_epic_review",
+                    "title": f"Review Epic #{epic['number']}: {epic['title']}",
+                    "body": f"Epic #{epic['number']} is currently in-progress. If all child tasks for this epic are merged and closed, close this epic and announce completion to #general and #c-suite.",
+                }
+            )
+
         # Track in-progress work
         in_progress = await gh.list_issues(labels=["status/in-progress"], limit=10)
-        if in_progress:
+        task_items = [i for i in in_progress if "epic" not in i.get("labels", [])]
+        if task_items:
             events.append(
                 {
                     "type": "progress_check",
-                    "title": f"{len(in_progress)} tasks in progress",
-                    "body": "\n".join(f"- #{i['number']}: {i['title']}" for i in in_progress),
+                    "title": f"{len(task_items)} tasks in progress",
+                    "body": "\n".join(f"- #{i['number']}: {i['title']}" for i in task_items),
                 }
             )
 
