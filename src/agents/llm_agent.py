@@ -1,1 +1,0 @@
-# Externalize configuration for reasoning module using Kubernetes ConfigMap and Secret
