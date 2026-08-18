@@ -90,19 +90,40 @@ model_list:
       api_key: os.environ/GROQ_API_KEY
       api_base: https://api.groq.com/openai/v1
 
+  # ─── Cerebras Models ────────────────────────────────────────────────
+  # Prefix: cerebras/ — ultra-fast free tier Llama inference
+  - model_name: cerebras/llama-3.3-70b
+    litellm_params:
+      model: cerebras/llama-3.3-70b
+      api_key: os.environ/CEREBRAS_API_KEY
+      api_base: https://api.cerebras.ai/v1
+
+  # ─── Google AI Studio Models ─────────────────────────────────────────
+  # Generous free tier: 15 RPM, 1M TPM, 1,500 RPD
+  - model_name: google/gemini-2.0-flash
+    litellm_params:
+      model: gemini/gemini-2.0-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: google/gemini-2.5-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+
 litellm_settings:
-  # Fallback to a cheaper model if primary fails
+  # Multi-provider free tier fallback cascades
   fallbacks:
+    - groq/llama-3.3-70b-versatile: [cerebras/llama-3.3-70b, sambanova/Meta-Llama-3.3-70B-Instruct, google/gemini-2.0-flash, nemotron-super]
+    - sambanova/DeepSeek-R1: [groq/deepseek-r1-distill-llama-70b, openrouter/deepseek/deepseek-r1, nemotron-ultra]
+    - openrouter/qwen/qwen3-coder: [groq/llama-3.3-70b-versatile, nemotron-super]
     - nemotron-super: [nemotron-nano]
-    - openrouter/qwen/qwen3-coder: [nemotron-super]
-    - sambanova/DeepSeek-R1: [openrouter/deepseek/deepseek-r1]
-  
+
   # Timeout settings
   request_timeout: 120
-  
+
   # Rate limiting (requests per minute per model)
   max_budget: 100.0  # USD monthly cap
-  
+
   # Caching (reduce duplicate calls)
   cache: true
   cache_params:

@@ -21,3 +21,6 @@ env/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Local data & runtime caches
+data/

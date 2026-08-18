@@ -166,6 +166,12 @@ class CiganceAgent(BaseAgent):
             "Get all working models suitable for LiteLLM config rewiring",
             {"type": "object", "properties": {}},
         )
+        self.register_tool(
+            "export_litellm_config",
+            db.export_litellm_model_list,
+            "Export dynamic LiteLLM router configuration containing working free models and fallback cascades",
+            {"type": "object", "properties": {}},
+        )
 
         # Scraper tools
         self.register_tool(

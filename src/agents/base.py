@@ -1,7 +1,9 @@
 """Base agent class with autonomy loop."""
 
 import enum
+import inspect
 import json
+import re
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from typing import Any
@@ -289,8 +291,8 @@ class BaseAgent(ABC):
             return {"status": "error", "error": str(e)}
 
     async def _reasoning_loop(self, events: list[dict]) -> dict[str, Any]:
-        """Core reasoning loop with tool use."""
-        messages = [
+        """Core reasoning loop with tool use, exception isolation, and context safety."""
+        messages: list[dict[str, Any]] = [
             {"role": "system", "content": self.persona},
             {
                 "role": "user",
@@ -299,15 +301,28 @@ class BaseAgent(ABC):
         ]
 
         tool_definitions = [t["definition"] for t in self.tools.values()] or None
-        actions_taken = []
+        actions_taken: list[dict[str, Any]] = []
 
         for iteration in range(self.max_iterations):
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                tools=tool_definitions,
-                tool_choice="auto" if tool_definitions else None,
-            )
+            # Context window protection: keep system + user + last 8 messages if history grows long
+            if len(messages) > 12:
+                messages = [messages[0], messages[1]] + messages[-8:]
+
+            try:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    tools=tool_definitions,
+                    tool_choice="auto" if tool_definitions else None,
+                )
+            except Exception as e:
+                self.log.error("llm_call_failed", error=str(e), model=self.model)
+                return {
+                    "status": "error",
+                    "error": f"LLM call failed: {e}",
+                    "actions": actions_taken,
+                    "iterations": iteration + 1,
+                }
 
             choice = response.choices[0]
 
@@ -315,24 +330,49 @@ class BaseAgent(ABC):
             if not choice.message.tool_calls:
                 return {
                     "status": "completed",
-                    "summary": choice.message.content,
+                    "summary": choice.message.content or "Completed without text summary.",
                     "actions": actions_taken,
                     "iterations": iteration + 1,
                 }
 
-            # Execute tool calls
-            messages.append(choice.message.model_dump())
+            # Serialize assistant message cleanly
+            assistant_msg: dict[str, Any] = {
+                "role": "assistant",
+                "content": choice.message.content,
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        },
+                    }
+                    for tc in choice.message.tool_calls
+                ],
+            }
+            messages.append(assistant_msg)
 
+            # Execute tool calls with full exception isolation
             for tool_call in choice.message.tool_calls:
                 func_name = tool_call.function.name
-                func_args = json.loads(tool_call.function.arguments)
+                raw_args = tool_call.function.arguments or "{}"
+                func_args = self._safe_parse_json(raw_args)
 
                 self.log.info("tool_call", tool=func_name, args=func_args)
 
                 if func_name in self.tools:
-                    result = await self.tools[func_name]["function"](**func_args)
+                    try:
+                        func = self.tools[func_name]["function"]
+                        if inspect.iscoroutinefunction(func):
+                            result = await func(**func_args)
+                        else:
+                            result = func(**func_args)
+                    except Exception as exc:
+                        self.log.warning("tool_execution_error", tool=func_name, error=str(exc))
+                        result = f"Error executing {func_name}: {exc}"
                 else:
-                    result = f"Unknown tool: {func_name}"
+                    result = f"Unknown tool: {func_name}. Available: {list(self.tools.keys())}"
 
                 actions_taken.append(
                     {
@@ -352,9 +392,39 @@ class BaseAgent(ABC):
 
         return {
             "status": "max_iterations",
+            "summary": "Reached maximum allowed tool iterations for this cycle.",
             "actions": actions_taken,
             "iterations": self.max_iterations,
         }
+
+    @staticmethod
+    def _safe_parse_json(raw: str) -> dict[str, Any]:
+        """Safely parse JSON arguments, repairing common formatting flaws."""
+        if not raw or not raw.strip():
+            return {}
+        cleaned = raw.strip()
+        # Strip markdown code fencing if model wrapped JSON in ```json ... ```
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+            cleaned = cleaned.strip()
+
+        try:
+            parsed = json.loads(cleaned)
+            if isinstance(parsed, dict):
+                return parsed
+            return {"value": parsed}
+        except Exception:
+            # Fallback: attempt to find outermost { ... }
+            match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+            if match:
+                try:
+                    parsed = json.loads(match.group(0))
+                    if isinstance(parsed, dict):
+                        return parsed
+                except Exception:
+                    pass
+            return {"raw_input": cleaned}
 
     def _format_events(self, events: list[dict]) -> str:
         """Format events into a prompt for the agent."""

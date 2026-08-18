@@ -113,6 +113,19 @@ class CEOAgent(BaseAgent):
             },
         )
         self.register_tool(
+            "close_issue",
+            gh.close_issue,
+            "Close a completed or canceled issue with an optional comment",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "comment": {"type": "string"},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        self.register_tool(
             "list_issues",
             gh.list_issues,
             "List open GitHub Issues with optional label filter",
@@ -170,8 +183,8 @@ class CEOAgent(BaseAgent):
                     }
                 )
 
-        # Check issues needing CEO decision
-        issues = await gh.list_issues(labels=["needs-CEO"], limit=5)
+        # Check issues needing CEO decision (check lowercase needs-ceo)
+        issues = await gh.list_issues(labels=["needs-ceo"], limit=5)
         for issue in issues:
             events.append(
                 {

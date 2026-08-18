@@ -7,6 +7,7 @@ import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from src.agents.ceo import CEOAgent
+from src.agents.cigance import CiganceAgent
 from src.agents.cto import CTOAgent
 from src.agents.devops import DevOpsAgent
 from src.agents.eng_manager import EngManagerAgent
@@ -15,6 +16,9 @@ from src.agents.frontend_engineer import FrontendEngineerAgent
 from src.agents.fullstack_engineer import FullstackEngineerAgent
 from src.agents.marketer import MarketerAgent
 from src.agents.qa_engineer import QAEngineerAgent
+from src.agents.reporter import ReporterAgent
+from src.agents.ta_specialist import TASpecialistAgent
+from src.agents.tech_interviewer import TechInterviewerAgent
 from src.config import Settings
 
 logger = structlog.get_logger()
@@ -36,6 +40,10 @@ class Orchestrator:
             "devops": DevOpsAgent(),
             "qa-engineer": QAEngineerAgent(),
             "marketer": MarketerAgent(),
+            "cigance": CiganceAgent(),
+            "ta-specialist": TASpecialistAgent(),
+            "tech-interviewer": TechInterviewerAgent(),
+            "reporter": ReporterAgent(),
         }
         self.running = True
 
@@ -58,6 +66,16 @@ class Orchestrator:
     def setup_schedules(self) -> None:
         """Configure agent run schedules."""
         interval = self.settings.cycle_interval_seconds
+
+        # Cigance Free Token Scout: every 30 minutes
+        self.scheduler.add_job(
+            self.run_agent,
+            "interval",
+            seconds=interval * 6,
+            args=["cigance"],
+            id="cigance_cycle",
+            name="Cigance (Free AI Token Scout) Cycle",
+        )
 
         # C-Suite: every 5 minutes
         self.scheduler.add_job(
@@ -140,6 +158,24 @@ class Orchestrator:
             args=["marketer"],
             id="marketer_cycle",
             name="Marketer Cycle",
+        )
+
+        # Talent & Reporting: periodic
+        self.scheduler.add_job(
+            self.run_agent,
+            "interval",
+            seconds=interval * 12,
+            args=["ta-specialist"],
+            id="ta_cycle",
+            name="TA Specialist Cycle",
+        )
+        self.scheduler.add_job(
+            self.run_agent,
+            "interval",
+            seconds=interval * 6,
+            args=["reporter"],
+            id="reporter_cycle",
+            name="Reporter Cycle",
         )
 
     async def start(self) -> None:

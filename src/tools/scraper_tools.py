@@ -88,6 +88,20 @@ KNOWN_FREE_PROVIDERS = [
         "notes": "Fast inference. Many open models. Tool calling on some.",
     },
     {
+        "name": "google-ai-studio",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "signup_url": "https://aistudio.google.com",
+        "free_tier": "Free tier: Gemini 2.0 Flash, 15 RPM, 1M TPM, 1500 req/day",
+        "notes": "Top tier free provider. Fast, strong reasoning, tool calling native.",
+    },
+    {
+        "name": "cloudflare-workers-ai",
+        "base_url": "https://api.cloudflare.com/client/v4/ai/v1",
+        "signup_url": "https://dash.cloudflare.com",
+        "free_tier": "Free tier: 10,000 neurons/day (~50k tokens)",
+        "notes": "OpenAI compatible. Llama 3.3 70B, DeepSeek R1.",
+    },
+    {
         "name": "deepinfra",
         "base_url": "https://api.deepinfra.com/v1/openai",
         "signup_url": "https://deepinfra.com",

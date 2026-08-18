@@ -48,6 +48,33 @@ class GitHubTools:
             resp.raise_for_status()
             return {"status": "commented", "issue": issue_number}
 
+    async def close_issue(self, issue_number: int, comment: str | None = None) -> dict[str, Any]:
+        """Close an issue with an optional closing comment."""
+        if comment:
+            await self.comment_on_issue(issue_number, comment)
+        url = f"{self.base_url}/repos/{self.repo}/issues/{issue_number}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.patch(url, json={"state": "closed"}, headers=self.headers)
+            resp.raise_for_status()
+            logger.info("issue_closed", issue=issue_number)
+            return {"status": "closed", "issue": issue_number}
+
+    async def get_issue(self, issue_number: int) -> dict[str, Any]:
+        """Get details for a specific issue."""
+        url = f"{self.base_url}/repos/{self.repo}/issues/{issue_number}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=self.headers)
+            resp.raise_for_status()
+            data = resp.json()
+            return {
+                "number": data["number"],
+                "title": data["title"],
+                "body": data.get("body", ""),
+                "state": data.get("state", "open"),
+                "labels": [label["name"] for label in data.get("labels", [])],
+                "assignee": data.get("assignee", {}).get("login") if data.get("assignee") else None,
+            }
+
     async def list_issues(
         self, labels: list[str] | None = None, limit: int = 10
     ) -> list[dict[str, Any]]:

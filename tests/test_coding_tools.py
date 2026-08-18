@@ -134,9 +134,7 @@ class TestCreateBranch:
     async def test_source_branch_not_found(self, tools):
         with patch("httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()
-            mock_client.request = AsyncMock(
-                return_value=MagicMock(status_code=404)
-            )
+            mock_client.request = AsyncMock(return_value=MagicMock(status_code=404))
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
             mock_client_cls.return_value = mock_client
