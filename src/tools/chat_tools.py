@@ -27,12 +27,10 @@ class ChatTools:
             self._name = "none"
 
     async def send_message(self, channel: str, text: str) -> dict[str, Any]:
-        """Send a message with thinking indicator (Mattermost) or direct (Slack)."""
+        """Send a message directly to a Mattermost or Slack channel."""
         if not self._backend:
             logger.warning("no_chat_backend_configured")
             return {"error": "No chat backend configured"}
-        if self._name == "mattermost" and hasattr(self._backend, "send_message_with_thinking"):
-            return await self._backend.send_message_with_thinking(channel=channel, text=text)
         return await self._backend.send_message(channel=channel, text=text)
 
     async def get_channel_history(self, channel: str, limit: int = 10) -> list[dict[str, Any]]:

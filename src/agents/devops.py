@@ -94,6 +94,47 @@ class DevOpsAgent(BaseAgent):
             },
         )
         self.register_tool(
+            "merge_pull_request",
+            gh.merge_pull_request,
+            "Merge an approved PR into main (squash, merge, or rebase)",
+            {
+                "type": "object",
+                "properties": {
+                    "pr_number": {"type": "integer"},
+                    "commit_title": {"type": "string"},
+                    "merge_method": {"type": "string", "description": "squash, merge, or rebase"},
+                },
+                "required": ["pr_number"],
+            },
+        )
+        self.register_tool(
+            "update_issue_labels",
+            gh.update_issue_labels,
+            "Add or remove labels from an issue or PR (e.g. add status/done, remove status/in-progress)",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "add": {"type": "array", "items": {"type": "string"}},
+                    "remove": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        self.register_tool(
+            "close_issue",
+            gh.close_issue,
+            "Close a completed issue with a comment",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "comment": {"type": "string"},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        self.register_tool(
             "list_pull_requests",
             gh.list_pull_requests,
             "List open PRs",
@@ -113,6 +154,19 @@ class DevOpsAgent(BaseAgent):
             events.append(
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
+
+        # Priority 1: PRs that passed QA and are ready for merge/deployment
+        prs = await gh.list_pull_requests(limit=10)
+        for pr in prs:
+            pr_labels = pr.get("labels", [])
+            if "status/qa-passed" in pr_labels or "ready-to-merge" in pr_labels:
+                events.append(
+                    {
+                        "type": "pr_ready_to_merge",
+                        "title": f"Merge PR #{pr['number']}: {pr['title']}",
+                        "body": f"PR #{pr['number']} by {pr.get('author')} has passed QA and is ready for merge & deployment.",
+                    }
+                )
 
         issues = await gh.list_issues(labels=["dept/devops"], limit=5)
         for issue in issues:

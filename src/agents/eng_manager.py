@@ -124,6 +124,33 @@ class EngManagerAgent(BaseAgent):
             },
         )
         self.register_tool(
+            "update_issue_labels",
+            gh.update_issue_labels,
+            "Add or remove labels from an issue. CRITICAL: When you finish breaking down an epic, call this to remove 'needs-breakdown' and add 'status/in-progress'.",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "add": {"type": "array", "items": {"type": "string"}},
+                    "remove": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        self.register_tool(
+            "close_issue",
+            gh.close_issue,
+            "Close a completed or duplicate issue",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "comment": {"type": "string"},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        self.register_tool(
             "list_issues",
             gh.list_issues,
             "List issues",

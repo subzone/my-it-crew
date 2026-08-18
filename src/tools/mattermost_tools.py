@@ -23,45 +23,87 @@ class MattermostTools:
         self._channel_cache: dict[str, str] = {}
 
     async def _get_channel_id(self, channel_name: str) -> str | None:
-        """Get channel ID by name."""
-        if channel_name in self._channel_cache:
-            return self._channel_cache[channel_name]
+        """Get channel ID by name or display name with fallback mapping."""
+        clean_name = channel_name.lstrip("#").strip().lower().replace(" ", "-")
+        if clean_name in self._channel_cache:
+            return self._channel_cache[clean_name]
 
-        # Get team ID first
-        url = f"{self.base_url}/teams"
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(url, headers=self.headers)
-            if resp.status_code != 200:
-                return None
-            teams = resp.json()
-            if not teams:
-                return None
-            team_id = teams[0]["id"]
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # 1. Get team ID
+                resp = await client.get(f"{self.base_url}/teams", headers=self.headers)
+                if resp.status_code != 200:
+                    logger.warning("mattermost_get_teams_failed", status=resp.status_code)
+                    return None
+                teams = resp.json()
+                if not teams:
+                    return None
+                team_id = teams[0]["id"]
 
-            # Get channel by name
-            url = f"{self.base_url}/teams/{team_id}/channels/name/{channel_name}"
-            resp = await client.get(url, headers=self.headers)
-            if resp.status_code != 200:
-                return None
-            channel_id = resp.json()["id"]
-            self._channel_cache[channel_name] = channel_id
-            return channel_id
+                # 2. Get all public channels in team
+                resp = await client.get(
+                    f"{self.base_url}/teams/{team_id}/channels", headers=self.headers
+                )
+                if resp.status_code == 200:
+                    channels = resp.json()
+                    # Look for exact name or display name match
+                    for ch in channels:
+                        ch_name = ch.get("name", "").lower()
+                        ch_display = ch.get("display_name", "").lower().replace(" ", "-")
+                        self._channel_cache[ch_name] = ch["id"]
+                        self._channel_cache[ch_display] = ch["id"]
+
+                    if clean_name in self._channel_cache:
+                        return self._channel_cache[clean_name]
+
+                    # Aliases: 'general' -> 'town-square'
+                    if clean_name in ("general", "main") and "town-square" in self._channel_cache:
+                        self._channel_cache[clean_name] = self._channel_cache["town-square"]
+                        return self._channel_cache["town-square"]
+
+                    # Fallback to town-square or first public channel
+                    if "town-square" in self._channel_cache:
+                        return self._channel_cache["town-square"]
+                    if channels:
+                        return channels[0]["id"]
+
+                # 3. Direct channel by name query
+                url = f"{self.base_url}/teams/{team_id}/channels/name/{clean_name}"
+                resp = await client.get(url, headers=self.headers)
+                if resp.status_code == 200:
+                    cid = resp.json()["id"]
+                    self._channel_cache[clean_name] = cid
+                    return cid
+
+        except Exception as exc:
+            logger.warning("mattermost_channel_lookup_error", channel=channel_name, error=str(exc))
+        return None
 
     async def send_message(self, channel: str, text: str) -> dict[str, Any]:
         """Send a message to a Mattermost channel."""
         channel_id = await self._get_channel_id(channel)
         if not channel_id:
+            logger.warning("mattermost_channel_not_found", channel=channel)
             return {"error": f"Channel '{channel}' not found"}
 
         url = f"{self.base_url}/posts"
         payload = {"channel_id": channel_id, "message": text}
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(url, json=payload, headers=self.headers)
-            if resp.status_code not in (200, 201):
-                return {"error": f"Failed to post: {resp.status_code}"}
-            logger.info("mattermost_message_sent", channel=channel)
-            return {"status": "sent", "channel": channel}
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(url, json=payload, headers=self.headers)
+                if resp.status_code not in (200, 201):
+                    logger.warning(
+                        "mattermost_post_failed", status=resp.status_code, body=resp.text[:200]
+                    )
+                    return {"error": f"Failed to post: {resp.status_code}"}
+                logger.info(
+                    "mattermost_message_sent", channel=channel, post_id=resp.json().get("id")
+                )
+                return {"status": "sent", "channel": channel, "post_id": resp.json().get("id")}
+        except Exception as e:
+            logger.error("mattermost_send_error", channel=channel, error=str(e))
+            return {"error": str(e)}
 
     async def update_message(self, post_id: str, text: str) -> dict[str, Any]:
         """Update an existing message."""

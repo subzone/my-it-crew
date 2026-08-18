@@ -128,9 +128,60 @@ class GitHubTools:
                     "title": pr["title"],
                     "body": pr.get("body", ""),
                     "author": pr["user"]["login"],
+                    "labels": [lbl["name"] for lbl in pr.get("labels", [])],
                     "review_comments": pr.get("review_comments", 0),
+                    "head": pr.get("head", {}).get("ref", ""),
+                    "base": pr.get("base", {}).get("ref", "main"),
                 }
                 for pr in prs
+            ]
+
+    async def merge_pull_request(
+        self,
+        pr_number: int,
+        commit_title: str | None = None,
+        commit_message: str | None = None,
+        merge_method: str = "squash",
+    ) -> dict[str, Any]:
+        """Merge an approved pull request into main."""
+        url = f"{self.base_url}/repos/{self.repo}/pulls/{pr_number}/merge"
+        payload: dict[str, Any] = {"merge_method": merge_method}
+        if commit_title:
+            payload["commit_title"] = commit_title
+        if commit_message:
+            payload["commit_message"] = commit_message
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.put(url, json=payload, headers=self.headers)
+            if resp.status_code == 200:
+                logger.info("pr_merged", pr=pr_number)
+                return {"status": "merged", "pr": pr_number, "sha": resp.json().get("sha")}
+            logger.warning(
+                "pr_merge_failed", pr=pr_number, status=resp.status_code, body=resp.text[:200]
+            )
+            return {
+                "status": "merge_failed",
+                "pr": pr_number,
+                "code": resp.status_code,
+                "body": resp.text[:200],
+            }
+
+    async def get_issue_comments(self, issue_number: int, limit: int = 10) -> list[dict[str, Any]]:
+        """Get recent comments on an issue or PR."""
+        url = f"{self.base_url}/repos/{self.repo}/issues/{issue_number}/comments"
+        params = {"per_page": limit}
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, params=params, headers=self.headers)
+            resp.raise_for_status()
+            comments = resp.json()
+            return [
+                {
+                    "id": c["id"],
+                    "user": c.get("user", {}).get("login", "unknown"),
+                    "body": c.get("body", ""),
+                    "created_at": c.get("created_at", ""),
+                }
+                for c in comments
             ]
 
     async def create_discussion(

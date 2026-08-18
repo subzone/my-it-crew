@@ -198,14 +198,17 @@ class CTOAgent(BaseAgent):
                 }
             )
 
-        # PRs needing review
-        prs = await gh.list_pull_requests(limit=5)
+        # PRs needing review (exclude already reviewed or passed PRs)
+        prs = await gh.list_pull_requests(limit=10)
         for pr in prs:
+            pr_labels = pr.get("labels", [])
+            if any(lbl in pr_labels for lbl in ("cto-reviewed", "status/qa-passed", "status/done")):
+                continue
             events.append(
                 {
                     "type": "pr_needs_review",
                     "title": pr["title"],
-                    "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}",
+                    "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
                 }
             )
 

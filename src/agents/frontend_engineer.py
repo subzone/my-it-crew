@@ -251,6 +251,14 @@ class FrontendEngineerAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
+        # Check for open PRs authored by Kai
+        prs = await gh.list_pull_requests(limit=10)
+        my_open_prs = [
+            pr
+            for pr in prs
+            if "kai" in pr.get("author", "").lower() or pr.get("head", "").startswith("kai/")
+        ]
+
         # PRIORITY 1: Continue work I already claimed
         my_tasks = await gh.list_issues(labels=["claimed-by/kai", "status/in-progress"], limit=3)
         for issue in my_tasks:
@@ -263,8 +271,8 @@ class FrontendEngineerAgent(BaseAgent):
                 }
             )
 
-        # PRIORITY 2: Only look for new tasks if I have nothing in progress
-        if not my_tasks:
+        # PRIORITY 2: Only look for new tasks if I have NO tasks in progress and NO open PRs in flight (WIP limit = 1)
+        if not my_tasks and not my_open_prs:
             # Frontend tasks first
             issues = await gh.list_issues(labels=["dept/frontend", "status/ready"], limit=5)
             for issue in issues:
@@ -297,16 +305,16 @@ class FrontendEngineerAgent(BaseAgent):
                         }
                     )
 
-        # PRs to review (from teammates)
-        prs = await gh.list_pull_requests(limit=5)
+        # PRs to review from teammates (exclude my own PRs)
         for pr in prs:
-            events.append(
-                {
-                    "type": "pr_needs_review",
-                    "title": pr["title"],
-                    "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
-                }
-            )
+            if pr not in my_open_prs:
+                events.append(
+                    {
+                        "type": "pr_needs_review",
+                        "title": pr["title"],
+                        "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
+                    }
+                )
 
         return events
 

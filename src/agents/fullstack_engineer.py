@@ -238,6 +238,25 @@ class FullstackEngineerAgent(BaseAgent):
             },
         )
 
+    async def _enrich_context(self, gh: GitHubTools, body: str) -> str:
+        """Propagate parent epic architectural context to Zara."""
+        import re
+
+        match = re.search(r"(?:Parent Epic|Epic|parent):\s*#?(\d+)", body, re.IGNORECASE)
+        if not match:
+            return body[:500]
+        try:
+            parent_num = int(match.group(1))
+            parent = await gh.get_issue(parent_num)
+            if parent and "title" in parent:
+                return (
+                    f"{body[:400]}\n\n[Architecture Note from Parent Epic #{parent_num}: "
+                    f"'{parent.get('title')}']"
+                )
+        except Exception:
+            pass
+        return body[:500]
+
     async def perceive(self) -> list[dict]:
         gh = GitHubTools(self.settings)
         events = []
@@ -250,42 +269,52 @@ class FullstackEngineerAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
+        # Check for open PRs authored by Zara
+        prs = await gh.list_pull_requests(limit=10)
+        my_open_prs = [
+            pr
+            for pr in prs
+            if "zara" in pr.get("author", "").lower() or pr.get("head", "").startswith("zara/")
+        ]
+
         # PRIORITY 1: Continue work I already claimed
         my_tasks = await gh.list_issues(labels=["claimed-by/zara", "status/in-progress"], limit=3)
         for issue in my_tasks:
+            enriched_body = await self._enrich_context(gh, issue.get("body", ""))
             events.append(
                 {
                     "type": "my_in_progress_task",
                     "title": issue["title"],
-                    "body": f"Issue #{issue['number']} (YOUR task — continue implementing): {issue.get('body', '')[:500]}",
+                    "body": f"Issue #{issue['number']} (YOUR task — continue implementing): {enriched_body}",
                 }
             )
 
-        # PRIORITY 2: Only look for new tasks if I have nothing in progress
-        if not my_tasks:
+        # PRIORITY 2: Only look for new tasks if I have NO tasks in progress and NO open PRs in flight (WIP limit = 1)
+        if not my_tasks and not my_open_prs:
             issues = await gh.list_issues(labels=["status/ready", "dept/engineering"], limit=5)
             for issue in issues:
                 issue_labels = [label for label in issue.get("labels", [])]
                 if any(lbl.startswith("claimed-by/") for lbl in issue_labels):
                     continue
+                enriched_body = await self._enrich_context(gh, issue.get("body", ""))
                 events.append(
                     {
                         "type": "unclaimed_task",
                         "title": issue["title"],
-                        "body": f"Issue #{issue['number']}: {issue.get('body', '')[:500]}",
+                        "body": f"Issue #{issue['number']}: {enriched_body}",
                     }
                 )
 
         # PRs to review (from teammates)
-        prs = await gh.list_pull_requests(limit=5)
         for pr in prs:
-            events.append(
-                {
-                    "type": "pr_needs_review",
-                    "title": pr["title"],
-                    "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
-                }
-            )
+            if pr not in my_open_prs:
+                events.append(
+                    {
+                        "type": "pr_needs_review",
+                        "title": pr["title"],
+                        "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
+                    }
+                )
 
         return events
 

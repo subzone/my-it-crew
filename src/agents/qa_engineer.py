@@ -92,6 +92,33 @@ class QAEngineerAgent(BaseAgent):
             },
         )
         self.register_tool(
+            "update_issue_labels",
+            gh.update_issue_labels,
+            "Add or remove labels from an issue or PR (e.g. add 'status/qa-passed' to approve PR, or 'status/qa-failed' if bugs found)",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "add": {"type": "array", "items": {"type": "string"}},
+                    "remove": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        self.register_tool(
+            "close_issue",
+            gh.close_issue,
+            "Close an issue if testing is verified and complete",
+            {
+                "type": "object",
+                "properties": {
+                    "issue_number": {"type": "integer"},
+                    "comment": {"type": "string"},
+                },
+                "required": ["issue_number"],
+            },
+        )
+        self.register_tool(
             "list_pull_requests",
             gh.list_pull_requests,
             "List open PRs to review",
@@ -112,14 +139,17 @@ class QAEngineerAgent(BaseAgent):
                 {"type": "direct_message", "title": "DM received", "body": dm["text"][:500]}
             )
 
-        # PRs needing QA
-        prs = await gh.list_pull_requests(limit=5)
+        # PRs needing QA (exclude already validated PRs)
+        prs = await gh.list_pull_requests(limit=10)
         for pr in prs:
+            pr_labels = pr.get("labels", [])
+            if "status/qa-passed" in pr_labels or "status/qa-failed" in pr_labels:
+                continue
             events.append(
                 {
                     "type": "pr_needs_qa",
                     "title": pr["title"],
-                    "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}",
+                    "body": f"PR #{pr['number']} by {pr.get('author', 'unknown')}: {pr.get('body', '')[:300]}",
                 }
             )
 
