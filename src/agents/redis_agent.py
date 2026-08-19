@@ -1,4 +1,4 @@
-import redis
+# Redis agent for IT ticket triage
 
 class RedisAgent:
     def __init__(self, host: str, port: int, password: str, database: int):
@@ -12,5 +12,5 @@ class RedisAgent:
         try:
             self.client.ping()
             return True
-        except redis.exceptions.ConnectionError:
+        except redis.exceptions.RedisError:
             return False
