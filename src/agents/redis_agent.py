@@ -1,14 +1,10 @@
 import redis
 
-def connect_to_redis(host: str, port: int, password: str, db: int) -> redis.Redis:
+def connect_to_redis(host, port, password, database):
     # Establish connection to Redis instance
-    client = redis.Redis(host=host, port=port, password=password, db=db)
+    client = redis.Redis(host=host, port=port, password=password, db=database)
     return client
 
-def ping_redis(client: redis.Redis) -> bool:
+def health_check(client):
     # Health check endpoint (/redis/ping) returns PONG
-    try:
-        client.ping()
-        return True
-    except redis.exceptions.RedisError:
-        return False
+    return client.ping() == b'PONG'
