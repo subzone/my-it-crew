@@ -1,14 +1,22 @@
 import redis
 
 class RedisAgent:
-    def __init__(self, host: str, port: int, db: int):
+    def __init__(self, host: str, port: int, password: str, database: int):
         self.host = host
         self.port = port
-        self.db = db
-        self.redis_client = redis.Redis(host=host, port=port, db=db)
+        self.password = password
+        self.database = database
+        self.redis_client = None
 
-    def get(self, key: str):
-        return self.redis_client.get(key)
+    def connect(self) -> bool:
+        try:
+            self.redis_client = redis.Redis(host=self.host, port=self.port, password=self.password, db=self.database)
+            return True
+        except redis.exceptions.ConnectionError:
+            return False
 
-    def set(self, key: str, value: str):
-        self.redis_client.set(key, value)
+    def ping(self) -> str:
+        try:
+            return self.redis_client.ping()
+        except redis.exceptions.ConnectionError:
+            return "Connection error"
