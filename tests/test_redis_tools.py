@@ -1,9 +1,6 @@
 import pytest
-from src.tools.redis_tools import RedisTool
+from src.tools.redis_tools import redis_client
 
 @pytest.fixture
-def redis_tool():
-    return RedisTool(host='localhost', port=6379, password=None, database=0)
-
-def test_ping(redis_tool):
-    assert redis_tool.ping() == b'PONG'
+def redis_client_fixture():
+    return redis_client
