@@ -6,17 +6,11 @@ class RedisAgent:
         self.port = port
         self.password = password
         self.database = database
-        self.client = None
+        self.client = redis.Redis(host=host, port=port, password=password, db=database)
 
-    def connect(self) -> bool:
+    def ping(self) -> bool:
         try:
-            self.client = redis.Redis(host=self.host, port=self.port, password=self.password, db=self.database)
+            self.client.ping()
             return True
         except redis.exceptions.ConnectionError:
             return False
-
-    def ping(self) -> str:
-        if self.client:
-            return self.client.ping()
-        else:
-            return "Connection not established"
