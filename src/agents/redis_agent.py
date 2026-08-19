@@ -6,11 +6,11 @@ class RedisAgent:
         self.port = port
         self.password = password
         self.database = database
-        self.client = redis.Redis(host=host, port=port, password=password, db=database)
+        self.redis_client = redis.Redis(host=host, port=port, password=password, db=database)
 
     def ping(self) -> bool:
         try:
-            self.client.ping()
+            self.redis_client.ping()
             return True
-        except redis.exceptions.ConnectionError:
+        except redis.exceptions.RedisError:
             return False
