@@ -3,7 +3,7 @@ from src.tools.redis_tools import RedisTool
 
 @pytest.fixture
 def redis_tool():
-    return RedisTool(host='localhost', port=6379, password='password', database=0)
+    return RedisTool(host='localhost', port=6379, password='', database=0)
 
-def test_redis_tool(redis_tool):
+def test_ping(redis_tool):
     assert redis_tool.ping() == b'PONG'
