@@ -1,5 +1,16 @@
 import redis
 
-def connect_to_redis(host: str, port: int, password: str, db: int) -> redis.Redis:
-    client = redis.Redis(host=host, port=port, password=password, db=db)
-    return client
+class RedisAgent:
+    def __init__(self, host: str, port: int, password: str, db: int):
+        self.host = host
+        self.port = port
+        self.password = password
+        self.db = db
+        self.client = redis.Redis(host=host, port=port, password=password, db=db)
+
+    def ping(self) -> bool:
+        try:
+            self.client.ping()
+            return True
+        except redis.exceptions.RedisError:
+            return False
