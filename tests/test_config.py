@@ -1,6 +1,7 @@
-import pytest
-import redis
+import unittest
+from src.config import redis_client
 
-def test_redis_connection():
-    redis_client = redis.Redis(host='localhost', port=6379, db=0)
-    assert redis_client.ping() == True
+class TestRedisConfig(unittest.TestCase):
+    def test_redis_connection(self):
+        self.assertIsNotNone(redis_client)
+        self.assertTrue(redis_client.ping())
