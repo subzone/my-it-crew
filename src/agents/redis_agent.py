@@ -12,5 +12,5 @@ class RedisAgent:
         try:
             self.client.ping()
             return True
-        except redis.exceptions.ConnectionError:
+        except redis.exceptions.RedisError:
             return False
