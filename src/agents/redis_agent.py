@@ -1,10 +1,16 @@
 import redis
 
-def connect_to_redis(host, port, password, database):
-    # Establish connection to Redis instance
-    client = redis.Redis(host=host, port=port, password=password, db=database)
-    return client
+class RedisAgent:
+    def __init__(self, host: str, port: int, password: str, database: int):
+        self.host = host
+        self.port = port
+        self.password = password
+        self.database = database
+        self.redis_client = redis.Redis(host=host, port=port, password=password, db=database)
 
-def health_check(client):
-    # Health check endpoint (/redis/ping) returns PONG
-    return client.ping() == b'PONG'
+    def ping(self) -> bool:
+        try:
+            self.redis_client.ping()
+            return True
+        except redis.exceptions.RedisError:
+            return False
