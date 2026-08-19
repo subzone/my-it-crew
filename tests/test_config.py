@@ -1,8 +1,6 @@
 import pytest
-from src.config import Settings
+import redis
 
-def test_settings():
-    settings = Settings()
-    assert settings.redis_host == 'localhost'
-    assert settings.redis_port == 6379
-    assert settings.redis_db == 0
+def test_redis_connection():
+    redis_client = redis.Redis(host='localhost', port=6379, db=0)
+    assert redis_client.ping() == True
