@@ -7,7 +7,7 @@ class RedisAgent:
         self.password = password
         self.db = db
         self.client = redis.Redis(host=host, port=port, password=password, db=db)
-
+    
     def ping(self) -> bool:
         try:
             self.client.ping()
