@@ -1,1 +1,5 @@
-config content
+# Add SLO configuration
+SLO_P50_LATENCY = 500
+SLO_P99_LATENCY = 1000
+SLO_ERROR_RATE = 0.01
+SLO_AVAILABILITY = 0.99
