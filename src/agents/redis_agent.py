@@ -1,14 +1,16 @@
-import redis
+# Redis agent for IT ticket triage
 
-def connect_to_redis(host: str, port: int, password: str, db: int) -> redis.Redis:
-    # Establish connection to Redis instance
-    client = redis.Redis(host=host, port=port, password=password, db=db)
-    return client
+class RedisAgent:
+    def __init__(self, host: str, port: int, password: str, database: int):
+        self.host = host
+        self.port = port
+        self.password = password
+        self.database = database
+        self.client = redis.Redis(host=host, port=port, password=password, db=database)
 
-def health_check(client: redis.Redis) -> bool:
-    # Health check endpoint (/redis/ping) returns PONG
-    try:
-        client.ping()
-        return True
-    except redis.exceptions.RedisError:
-        return False
+    def ping(self) -> bool:
+        try:
+            self.client.ping()
+            return True
+        except redis.exceptions.RedisError:
+            return False
