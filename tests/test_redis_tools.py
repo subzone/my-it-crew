@@ -1,6 +1,6 @@
 import pytest
-from src.tools.redis_tools import redis_client
+from src.tools.redis_tools import ping_redis
 
-@pytest.fixture
-def redis():
-    return redis_client
+@pytest.mark.asyncio
+async def test_ping_redis() -> None:
+    assert ping_redis() == True
