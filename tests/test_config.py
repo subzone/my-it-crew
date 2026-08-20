@@ -1,6 +1,5 @@
 import pytest
-import redis
+from src.config import redis_client
 
 def test_redis_connection():
-    redis_client = redis.Redis(host='localhost', port=6379, db=0)
     assert redis_client.ping() == True
