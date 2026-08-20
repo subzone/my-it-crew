@@ -1,9 +1,6 @@
 import redis
 
-def connect_redis(host, port, password, database):
-    try:
-        client = redis.Redis(host=host, port=port, password=password, db=database)
-        return client
-    except redis.exceptions.ConnectionError as e:
-        print(f"Error connecting to Redis: {e}")
-        return None
+def connect_to_redis(host: str, port: int, password: str, db: int) -> redis.Redis:
+    # Establish connection to Redis instance
+    client = redis.Redis(host=host, port=port, password=password, db=db)
+    return client
