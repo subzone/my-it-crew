@@ -1,9 +1,7 @@
-import pytest
+import unittest
 from src.agents.redis_agent import RedisAgent
 
-@pytest.fixture
-def redis_agent():
-    return RedisAgent(host='localhost', port=6379, password=None, database=0)
-
-def test_ping(redis_agent):
-    assert redis_agent.ping() == True
+class TestRedisAgent(unittest.TestCase):
+    def test_ping(self):
+        agent = RedisAgent(host='localhost', port=6379, password='', database=0)
+        self.assertTrue(agent.ping())
