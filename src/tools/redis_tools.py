@@ -1,4 +1,8 @@
-import redis
+# Redis tooling for My IT Crew
 
-def get_redis_client():
-    return redis.Redis(host='localhost', port=6379, db=0)
+import redis
+from src.config import Settings
+
+settings = Settings()
+
+redis_client = redis.Redis(host=settings.redis_host, port=settings.redis_port, password=settings.redis_password, db=settings.redis_db)
