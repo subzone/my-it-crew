@@ -9,4 +9,8 @@ class RedisAgent:
         self.client = redis.Redis(host=host, port=port, password=password, db=database)
 
     def ping(self) -> bool:
-        return self.client.ping()
+        try:
+            self.client.ping()
+            return True
+        except redis.exceptions.ConnectionError:
+            return False
