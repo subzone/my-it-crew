@@ -1,0 +1,16 @@
+import redis
+
+class RedisTool:
+    def __init__(self, host: str, port: int, password: str, database: int):
+        self.host = host
+        self.port = port
+        self.password = password
+        self.database = database
+        self.client = redis.Redis(host=host, port=port, password=password, db=database)
+
+    def ping(self) -> bool:
+        try:
+            return self.client.ping()
+        except redis.exceptions.RedisError as e:
+            print(f"Error pinging Redis: {e}")
+            return False
