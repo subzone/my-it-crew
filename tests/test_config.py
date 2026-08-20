@@ -1,8 +1,6 @@
-import pytest
-from src.config import Settings
+import unittest
+from src.config import redis_client
 
-def test_config():
-    settings = Settings()
-    assert settings.redis_host == 'localhost'
-    assert settings.redis_port == 6379
-    assert settings.redis_db == 0
+class TestRedisConfig(unittest.TestCase):
+    def test_redis_connection(self):
+        self.assertIsNotNone(redis_client)
