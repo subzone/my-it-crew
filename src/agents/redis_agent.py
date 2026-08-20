@@ -1,5 +1,4 @@
-import redis
-from src.config import Settings
+# Redis agent for IT ticket triage
 
 class RedisAgent:
     def __init__(self, host: str, port: int, password: str, database: int):
