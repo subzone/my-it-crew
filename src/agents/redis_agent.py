@@ -1,16 +1,14 @@
-# Redis agent for IT ticket triage
+import redis
+from src.config import Settings
 
 class RedisAgent:
-    def __init__(self, host: str, port: int, password: str, database: int):
-        self.host = host
-        self.port = port
-        self.password = password
-        self.database = database
-        self.client = redis.Redis(host=host, port=port, password=password, db=database)
-
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self.redis_client = redis.Redis(host=settings.redis_host, port=settings.redis_port, password=settings.redis_password, db=settings.redis_db)
+    
     def ping(self) -> bool:
         try:
-            self.client.ping()
-            return True
-        except redis.exceptions.RedisError:
+            return self.redis_client.ping()
+        except redis.exceptions.RedisError as e:
+            print(f"Error pinging Redis: {e}")
             return False

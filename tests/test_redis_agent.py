@@ -1,9 +1,16 @@
 import pytest
 from src.agents.redis_agent import RedisAgent
+from src.config import Settings
 
 @pytest.fixture
-def redis_agent():
-    return RedisAgent(host='localhost', port=6379, password='password', database=0)
+def settings():
+    return Settings(
+        redis_host='localhost',
+        redis_port=6379,
+        redis_password='password',
+        redis_db=0
+    )
 
-def test_ping(redis_agent):
-    assert redis_agent.ping() == True
+def test_redis_agent(settings):
+    agent = RedisAgent(settings)
+    assert agent.ping()
