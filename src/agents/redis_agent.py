@@ -14,9 +14,3 @@ class RedisAgent:
             return True
         except redis.exceptions.RedisError:
             return False
-
-    def get(self, key: str):
-        return self.client.get(key)
-
-    def set(self, key: str, value: str):
-        self.client.set(key, value)
