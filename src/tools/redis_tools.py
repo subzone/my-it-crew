@@ -1,4 +1,5 @@
 import redis
-from src.config import Settings
+from src.config import redis_client
 
-redis_client = redis.Redis(host=Settings().redis_host, port=Settings().redis_port, db=Settings().redis_db)
+def get_redis_connection():
+    return redis_client
