@@ -1,6 +1,9 @@
 import pytest
-from src.tools.redis_tools import ping_redis
+from src.tools.redis_tools import RedisTool
 
-@pytest.mark.asyncio
-async def test_ping_redis() -> None:
-    assert ping_redis() == True
+@pytest.fixture
+def redis_tool():
+    return RedisTool(host='localhost', port=6379, db=0)
+
+def test_redis_tool(redis_tool):
+    assert redis_tool.ping() == b'PONG'
